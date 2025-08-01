@@ -13,6 +13,6 @@ cd ${GITHUB_WORKSPACE}
 autoreconf -Wcross --verbose --install --force --exclude=autopoint
 autoconf --force
 # Run the configure script with the specified arguments
-./configure CFLAGS=\"-Wno-incompatible-pointer-types\" \${BUILD_ARGS}
+./configure CFLAGS="-Wno-incompatible-pointer-types" ${BUILD_ARGS}
 # make
-make DESTDIR=\${GITHUB_WORKSPACE}/build install
+make DESTDIR=${GITHUB_WORKSPACE}/build install
