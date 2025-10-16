@@ -69,7 +69,7 @@ char tracestr[100] = "agm: ";
 
 #define GSL_EVENT_SRC_MODULE_ID_GSL 0x2001 // DO NOT CHANGE
 
-//forward declarations
+//forward declarations Axiom Test
 static struct session_pool *sess_pool;
 static int session_close(struct session_obj *sess_obj);
 static int session_set_loopback(struct session_obj *sess_obj,
