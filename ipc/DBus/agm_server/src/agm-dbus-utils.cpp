@@ -237,7 +237,7 @@ static dbus_bool_t agm_add_dbus_watch_cb(DBusWatch *watch, void *userdata) {
     watch_data->watch = watch;
     watch_data->conn = dbus_connection_ref(conn->conn);
 
-    /* Sets data which can be retrieved with dbus_watch_get_data() */
+    /* Sets data which can be retrieved with dbus_watch_get_data() # axiom Test */
     dbus_watch_set_data(watch_data->watch, watch_data, agm_free_dbus_watch_data);
     /* Dbus flags indicating the conditions to be monitored on the dbus watch */
     watch_flags = dbus_watch_get_flags(watch_data->watch);
