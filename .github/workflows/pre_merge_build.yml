@@ -40,5 +40,5 @@ jobs:
 
   trigger_lava:
     needs: [ load_parameters, build, process_image ]
-    uses: Audioreach/audioreach-workflows/.github/workflows/test.yml@master
+    uses: Audioreach/audioreach-workflows/.github/workflows/test.yml@Axiom
     secrets: inherit
