@@ -2,9 +2,9 @@ name: Qualcomm Preflight Checks
 
 on:
   pull_request_target:
-    branches: [ Axiom ]
+    branches: [ master ]
   push:
-    branches: [ Axiom ]
+    branches: [ master ]
   workflow_dispatch:
 
 permissions:
@@ -13,5 +13,5 @@ permissions:
 
 jobs:
   qcom-preflight-checks:
-    uses: Audioreach/audioreach-workflows/.github/workflows/qcom-preflight-checks.yml@Axiom
+    uses: Audioreach/audioreach-workflows/.github/workflows/qcom-preflight-checks.yml@ci_test
     secrets: inherit
