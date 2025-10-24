@@ -17,4 +17,4 @@ autoconf --force
 # make
 make DESTDIR=${GITHUB_WORKSPACE}/build install
 
-echo "AXIOM test with TAR"
+echo "AXIOM test with TAR_1"
