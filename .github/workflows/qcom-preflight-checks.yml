@@ -2,9 +2,9 @@ name: Qualcomm Preflight Checks
 
 on:
   pull_request_target:
-    branches: [ Axiom ]
+    branches: [ master ]
   push:
-    branches: [ Axiom ]
+    branches: [ master ]
   workflow_dispatch:
 
 permissions:
