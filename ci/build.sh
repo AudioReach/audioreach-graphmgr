@@ -16,3 +16,4 @@ autoconf --force
 ./configure CFLAGS="-Wno-incompatible-pointer-types" ${BUILD_ARGS}
 # make
 make DESTDIR=${GITHUB_WORKSPACE}/build install
+# sample run
