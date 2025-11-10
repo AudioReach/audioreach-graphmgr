@@ -47,7 +47,7 @@
     <device name="CODEC_DMA-LPAIF_WSA-TX-3" rate="48000" ch="1" bits="16" />
     <device name="CODEC_DMA-LPAIF_WSA-TX-2" rate="48000" ch="1" bits="16" />
     <device name="PCM_RT_PROXY-TX-1" rate="48000" ch="1" bits="16" />
-    <device name="PCM_RT_PROXY-TX-2" rate="48000" ch="1" bits="16" />
+    <device name="PCM_RT_PROXY-TX-2" rate="48000" ch="2" bits="16" />
     <device name="PCM_RT_PROXY-RX-1" rate="48000" ch="1" bits="16" />
     <device name="PCM_RT_PROXY-RX-2" rate="48000" ch="2" bits="16" />
     <device name="PCM_DUMMY-TX-0" rate="48000" ch="1" bits="16" />
