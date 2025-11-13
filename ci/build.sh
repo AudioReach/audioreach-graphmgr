@@ -10,7 +10,7 @@ source ${GITHUB_WORKSPACE}/install/environment-setup-armv8-2a-poky-linux
 cd ${GITHUB_WORKSPACE}
 touch sample.txt
 echo "sample_audio file" > sample.txt
-# cp sample.txt ${GITHUB_WORKSPACE}/build
+cp sample.txt ${GITHUB_WORKSPACE}/build
 
 cat sample.txt
 
