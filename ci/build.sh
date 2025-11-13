@@ -8,6 +8,9 @@ echo "Running build script..."
 source ${GITHUB_WORKSPACE}/install/environment-setup-armv8-2a-poky-linux
 # make sure we are in the right directory
 cd ${GITHUB_WORKSPACE}
+touch sample.txt
+echo "sample_audio file" > sample.txt
+cp sample.txt ${GITHUB_WORKSPACE}
 
 # Run autoreconf to generate the configure script
 autoreconf -Wcross --verbose --install --force --exclude=autopoint
