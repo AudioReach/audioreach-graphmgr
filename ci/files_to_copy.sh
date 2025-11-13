@@ -11,6 +11,6 @@ cp -R build/usr/* /tmp/rootfs/usr/
 cp -R build/etc/* /tmp/rootfs/etc/
 touch sample_audio.txt
 echo "audio clip" > sample_audio.txt
-cp sample_audio.txt /tmp/rootfs/usr/
+cp sample_audio.txt /tmp/rootfs/
 # Axiom Trigger
 # Audio clip
