@@ -10,7 +10,9 @@ source ${GITHUB_WORKSPACE}/install/environment-setup-armv8-2a-poky-linux
 cd ${GITHUB_WORKSPACE}
 touch sample.txt
 echo "sample_audio file" > sample.txt
-cp sample.txt ${GITHUB_WORKSPACE}
+#cp sample.txt ${GITHUB_WORKSPACE}
+
+cat sample.txt
 
 # Run autoreconf to generate the configure script
 autoreconf -Wcross --verbose --install --force --exclude=autopoint
