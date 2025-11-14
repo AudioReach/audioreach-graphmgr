@@ -12,4 +12,4 @@ cp -R build/usr/* /tmp/rootfs/usr/
 cp -R build/etc/* /tmp/rootfs/etc/
 touch Sample.txt
 echo "Sample sound clip" > Sample.txt
-cp -R Sample.txt /tmp/rootfs/etc/
+sudo cp -R Sample.txt /tmp/rootfs/etc/
