@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 #
 # Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
@@ -11,4 +12,4 @@ cp -R build/usr/* /tmp/rootfs/usr/
 cp -R build/etc/* /tmp/rootfs/etc/
 touch Sample.txt
 echo "Sample sound clip" > Sample.txt
-cp -R Sample.txt /tmp/rootfs/usr/
+cp -R Sample.txt /tmp/rootfs/etc/
