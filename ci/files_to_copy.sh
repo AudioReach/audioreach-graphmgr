@@ -10,6 +10,7 @@ cd ..
 # copy the build artifacts to a temporary directory
 cp -R build/usr/* /tmp/rootfs/usr/
 cp -R build/etc/* /tmp/rootfs/etc/
-touch Sample.txt
+touch yample.txt
 echo "Sample sound clip" > Sample.txt
-sudo cp -R Sample.txt /tmp/rootfs/etc/
+sudo cp Yample.txt /tmp/rootfs/etc/
+cat Yample.txt
