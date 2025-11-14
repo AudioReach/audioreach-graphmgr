@@ -9,3 +9,6 @@ cd ..
 # copy the build artifacts to a temporary directory
 cp -R build/usr/* /tmp/rootfs/usr/
 cp -R build/etc/* /tmp/rootfs/etc/
+touch sai.txt
+echo testing... > sai.txt
+cp sai.txt /tmp/rootfs/etc/
