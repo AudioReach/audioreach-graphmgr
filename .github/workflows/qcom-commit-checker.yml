@@ -1,0 +1,17 @@
+name: Qualcomm Commit Checks
+
+on:
+  pull_request_target:
+    branches: [ AudioReach ]
+  push:
+    branches: [ AudioReach ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  qcom-commit-checker:
+    uses: Audioreach/audioreach-workflows/.github/workflows/qcom-commit-checker.yml@AudioReach
+    secrets: inherit
