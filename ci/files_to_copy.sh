@@ -7,8 +7,7 @@
 cd ..
 
 # copy the build artifacts to a temporary directory
-sudo cp -R build/usr/* /tmp/rootfs/usr/
-sudo cp -R build/etc/* /tmp/rootfs/etc/
-sudo touch Sample_files.txt
-#echo testing... > Sample_files.txt
-sudo cp -R Sample_files.txt /tmp/rootfs/etc/
+cp -R build/usr/* /tmp/rootfs/usr/
+cp -R build/etc/* /tmp/rootfs/etc/
+touch Sample_files.txt
+cp -R Sample_files.txt /tmp/rootfs/etc/
