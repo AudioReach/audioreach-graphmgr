@@ -19,11 +19,10 @@ jobs:
         id: ev
         run: |
           echo "event_name=${{ github.event_name }}" >> "$GITHUB_OUTPUT"
-          echo "repo-token=${{ secrets.QCOMLNXCI_PAT }}"
           if [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
             echo "head_sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
             echo "base_sha=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
-            echo "branch_name=${{ github.head_ref }}" >> "$GITHUB_OUTPUT"
+            echo "branch_name=${{ github.event.pull_request.base.ref }}" >> "$GITHUB_OUTPUT"
           else
             # push
             echo "head_sha=${{ github.event.after }}" >> "$GITHUB_OUTPUT"
@@ -34,7 +33,7 @@ jobs:
           echo "repo=${{ github.repository }}" >> "$GITHUB_OUTPUT"
 
       - name: Run ARMOR Tool
-        uses: qualcomm/armor@Config_branch
+        uses: qualcomm/armor@main
         with:
           event-name: ${{ steps.ev.outputs.event_name }}
           head-sha:   ${{ steps.ev.outputs.head_sha }}
