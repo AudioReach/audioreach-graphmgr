@@ -142,7 +142,6 @@ enum agm_data_mode
     AGM_DATA_NON_BLOCKING,  /**< Non blocking mode */
     AGM_DATA_PUSH_PULL,     /**< Push Pull mode */
     AGM_DATA_EXTERN_MEM,    /**< Push Pull mode */
-    AGM_DATA_MODE_MAX,
 };
 
 /**
