@@ -7,6 +7,13 @@ LOCAL_MODULE_OWNER  := qti
 LOCAL_MODULE_TAGS   := optional
 LOCAL_VENDOR_MODULE := true
 
+# add for gcov dump
+ifeq ($(AUDIO_FEATURE_ENABLED_GCOV), true)
+LOCAL_CFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
+LOCAL_CPPFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
+LOCAL_LDFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
+endif
+
 LOCAL_CFLAGS        += -Wall
 LOCAL_SRC_FILES     := src/agm_pcm_plugin.c
 
@@ -26,7 +33,7 @@ LOCAL_SHARED_LIBRARIES := \
 ifneq ($(filter 11 R, $(PLATFORM_VERSION)),)
 LOCAL_SHARED_LIBRARIES += libqti-tinyalsa
 else
-LOCAL_SHARED_LIBRARIES += libtinyalsa
+LOCAL_SHARED_LIBRARIES += liboss_tinyalsa
 endif
 
 ifeq ($(strip $(AUDIO_FEATURE_ENABLED_DYNAMIC_LOG)), true)
@@ -48,6 +55,13 @@ LOCAL_MODULE_TAGS   := optional
 LOCAL_VENDOR_MODULE := true
 LOCAL_SRC_FILES     := src/agm_mixer_plugin.c
 
+# add for gcov dump
+ifeq ($(AUDIO_FEATURE_ENABLED_GCOV), true)
+LOCAL_CFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
+LOCAL_CPPFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
+LOCAL_LDFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
+endif
+
 LOCAL_HEADER_LIBRARIES := \
     libagm_headers \
     libarosal_headers
@@ -64,7 +78,7 @@ LOCAL_SHARED_LIBRARIES := \
 ifneq ($(filter 11 R, $(PLATFORM_VERSION)),)
 LOCAL_SHARED_LIBRARIES += libqti-tinyalsa
 else
-LOCAL_SHARED_LIBRARIES += libtinyalsa
+LOCAL_SHARED_LIBRARIES += liboss_tinyalsa
 endif
 
 ifeq ($(strip $(AUDIO_FEATURE_ENABLED_DYNAMIC_LOG)), true)
@@ -90,6 +104,13 @@ LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
 
 LOCAL_SRC_FILES     := src/agm_compress_plugin.c
 
+# add for gcov dump
+ifeq ($(AUDIO_FEATURE_ENABLED_GCOV), true)
+LOCAL_CFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
+LOCAL_CPPFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
+LOCAL_LDFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
+endif
+
 LOCAL_HEADER_LIBRARIES := \
     libagm_headers \
     libarosal_headers
@@ -107,9 +128,8 @@ ifeq ($(TARGET_USES_QTI_TINYCOMPRESS),true)
 LOCAL_SHARED_LIBRARIES += libqti-tinyalsa\
                           libqti-tinycompress
 else
-LOCAL_C_INCLUDES += $(TOP)/external/tinycompress/include
-LOCAL_SHARED_LIBRARIES += libtinyalsa\
-                          libtinycompress
+LOCAL_SHARED_LIBRARIES += liboss_tinyalsa\
+                          liboss_tinycompress
 endif
 
 ifeq ($(strip $(AUDIO_FEATURE_ENABLED_DYNAMIC_LOG)), true)
@@ -121,4 +141,3 @@ LOCAL_HEADER_LIBRARIES += libaudiologutils_headers
 endif
 
 include $(BUILD_SHARED_LIBRARY)
-

@@ -57,6 +57,11 @@ struct device_config {
     enum pcm_format format;
 };
 
+struct usbAudioConfig {
+    uint32_t usb_token;
+    uint32_t svc_interval;
+};
+
 struct group_config {
     char name[80];
     unsigned int rate;
@@ -76,6 +81,8 @@ typedef enum {
 int convert_char_to_hex(char *char_num);
 int get_tinyalsa_pcm_bit_width(enum pcm_format fmt_id);
 int set_agm_device_media_config(struct mixer *mixer, char *intf_name, struct device_config *config);
+int set_agm_device_custom_payload(struct mixer *mixer, char *intf_name, void *payload, size_t size);
+void get_agm_usb_audio_config_payload(uint8_t** payload, size_t* size, uint32_t miid, struct usbAudioConfig *data);
 int set_agm_group_device_config(struct mixer *mixer, char *intf_name, struct group_config *config);
 int set_agm_group_mux_config(struct mixer *mixer, unsigned int device, struct group_config *config, char *intf_name, unsigned int channels);
 int connect_play_pcm_to_cap_pcm(struct mixer *mixer, unsigned int p_device, unsigned int c_device);
@@ -102,4 +109,7 @@ int get_device_media_config(char* filename, char *intf_name, struct device_confi
 int get_group_device_info(char* filename, char *intf_name, struct group_config *config);
 int configure_mfc(struct mixer *mixer, int device, char *intf_name, int tag, enum stream_type stype, unsigned int rate,
                        unsigned int channels, unsigned int bits, uint32_t miid);
+int set_agm_dp_audio_config_metadata(char *intf_name, struct mixer *mixer, uint32_t miid, unsigned int channels);
+int configure_pcm_converter(struct mixer *mixer, int device, char *intf_name, int tag,
+        enum stream_type stype, unsigned int rate, unsigned int channels, unsigned int bits);
 #endif

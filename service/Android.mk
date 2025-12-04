@@ -35,6 +35,13 @@ LOCAL_SRC_FILES  := \
     src/device_hw_ep.c \
     src/agm_memlogger.c
 
+# add for gcov dump
+ifeq ($(AUDIO_FEATURE_ENABLED_GCOV), true)
+LOCAL_CFLAGS += -DAUDIO_FEATURE_ENABLED_GCOV -g --coverage -fprofile-arcs -ftest-coverage
+LOCAL_CPPFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
+LOCAL_LDFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
+endif
+
 LOCAL_HEADER_LIBRARIES := \
     libspf-headers \
     libutils_headers \
@@ -51,12 +58,16 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils \
     libsndcardparser
 
+ifeq ($(ENABLE_HYP), true)
+LOCAL_CFLAGS += -DUSE_DEFAULT_ACDB_PATH -DBYPASS_ALSA_HW -DCARD_STATE_UNSUPPORTED
+endif
+
 #if android version is R, use qtitinyalsa lib otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
 ifneq ($(filter R 11,$(PLATFORM_VERSION)),)
 LOCAL_SHARED_LIBRARIES += libqti-tinyalsa
 else
-LOCAL_SHARED_LIBRARIES += libtinyalsa
+LOCAL_SHARED_LIBRARIES += liboss_tinyalsa
 endif
 
 

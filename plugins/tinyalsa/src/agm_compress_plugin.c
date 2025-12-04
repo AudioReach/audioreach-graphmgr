@@ -93,6 +93,9 @@ struct agm_compress_priv {
     bool eos;
     bool early_eos;
     bool eos_received;
+    bool internal_unblock_eos;
+    bool internal_unblock_early_eos;
+    bool internal_unblock_write;
 
     enum agm_gapless_silence_type type;   /* Silence Type (Initial/Trailing) */
     uint32_t silence;  /* Samples to remove */
@@ -218,9 +221,21 @@ void agm_compress_event_cb(uint32_t session_id __unused,
             pthread_cond_signal(&priv->early_eos_cond);
         }
         pthread_mutex_unlock(&priv->early_eos_lock);
+    } else if (event_params->event_id == AGM_EVENT_EARLY_EOS_INTERNAL) {
+        AGM_LOGD("%s: Early EOS event received from internal unblock\n", __func__);
+        /* Unblock early eos wait */
+        pthread_mutex_lock(&priv->early_eos_lock);
+        if (priv->early_eos) {
+            priv->early_eos = false;
+            pthread_cond_signal(&priv->early_eos_cond);
+            priv->internal_unblock_early_eos = true;
+        }
+        pthread_mutex_unlock(&priv->early_eos_lock);
     } else {
         AGM_LOGE("%s: error: Invalid event params id: %d\n", __func__,
            event_params->event_id);
+        pthread_mutex_unlock(&priv->lock);
+        return;
     }
     pthread_mutex_unlock(&priv->lock);
     /* Signal Poll */
@@ -287,7 +302,7 @@ err:
     return ret;
 }
 
-int agm_compress_write(void *data, const void *buf, unsigned int size)
+int agm_compress_write(void *data, const void *buf, size_t size)
 {
     struct agm_compress_priv *priv = data;
     struct snd_compr_avail avail;
@@ -368,7 +383,7 @@ int agm_read(struct agm_compress_priv *priv, void *buff, size_t count)
     return count;
 }
 
-int agm_compress_read(void *data, void *buf, unsigned int size)
+int agm_compress_read(void *data, void *buf, size_t size)
 {
     struct agm_compress_priv *priv = data;
     struct snd_compr_avail avail;
@@ -443,7 +458,7 @@ int agm_compress_tstamp(void *data,
 }
 
 int agm_compress_get_tstamp(void *data,
-                        unsigned long *samples, unsigned int *sampling_rate)
+                        unsigned int *samples, unsigned int *sampling_rate)
 {
     struct agm_compress_priv *priv = data;
     struct snd_compr_tstamp ktstamp;
@@ -522,6 +537,24 @@ int agm_compress_get_caps(void *data,
 
     return 0;
 }
+
+static enum agm_media_format alsa_to_agm_format(int format)
+{
+    switch (format) {
+    case SNDRV_PCM_FORMAT_S32_LE:
+        return AGM_FORMAT_PCM_S32_LE;
+    case SNDRV_PCM_FORMAT_S8:
+        return AGM_FORMAT_PCM_S8;
+    case SNDRV_PCM_FORMAT_S24_3LE:
+        return AGM_FORMAT_PCM_S24_3LE;
+    case SNDRV_PCM_FORMAT_S24_LE:
+        return AGM_FORMAT_PCM_S24_LE;
+    default:
+    case SNDRV_PCM_FORMAT_S16_LE:
+        return AGM_FORMAT_PCM_S16_LE;
+    };
+}
+
 
 int agm_session_update_codec_config(struct agm_compress_priv *priv,
                                     struct snd_compr_params *params)
@@ -604,6 +637,9 @@ int agm_session_update_codec_config(struct agm_compress_priv *priv,
                 sess_cfg->codec.opus_dec.num_channels = params->codec.ch_in;
                 sess_cfg->codec.opus_dec.sample_rate = media_cfg->rate;
             }
+            break;
+        case SND_AUDIOCODEC_PCM:
+            media_cfg->format = alsa_to_agm_format(params->codec.format);
             break;
         default:
             break;
@@ -784,6 +820,7 @@ static int agm_compress_stop(void *data)
     pthread_mutex_lock(&priv->eos_lock);
     if (priv->eos) {
         pthread_cond_signal(&priv->eos_cond);
+        priv->internal_unblock_eos = true;
         priv->eos = false;
     }
     priv->eos_received = true;
@@ -793,6 +830,7 @@ static int agm_compress_stop(void *data)
     pthread_mutex_lock(&priv->early_eos_lock);
     if (priv->early_eos) {
         pthread_cond_signal(&priv->early_eos_cond);
+        priv->internal_unblock_early_eos = true;
         priv->early_eos = false;
     }
     pthread_mutex_unlock(&priv->early_eos_lock);
@@ -800,6 +838,7 @@ static int agm_compress_stop(void *data)
     /* Signal Poll */
     pthread_mutex_lock(&priv->poll_lock);
     pthread_cond_signal(&priv->poll_cond);
+    priv->internal_unblock_write = true;
     pthread_mutex_unlock(&priv->poll_lock);
 
     ret = agm_session_stop(handle);
@@ -864,10 +903,10 @@ static int agm_compress_drain(void *data)
      * write and EOS cmds are sequential
      */
     /* TODO: how to handle wake up in SSR scenario */
+    ret = agm_session_eos(handle);
     pthread_mutex_lock(&priv->eos_lock);
     if (!priv->eos_received) {
         priv->eos = true;
-        ret = agm_session_eos(handle);
         if (ret) {
             AGM_LOGE("%s: EOS fail\n", __func__);
             errno = ret;
@@ -876,11 +915,17 @@ static int agm_compress_drain(void *data)
         }
         pthread_cond_wait(&priv->eos_cond, &priv->eos_lock);
         AGM_LOGD("%s: out of eos wait\n", __func__);
+        if (priv->internal_unblock_eos) {
+            AGM_LOGD("%s: out of eos wait, internally unblocked\n", __func__);
+            priv->internal_unblock_eos = false;
+            ret = -ECANCELED;
+            errno = ret;
+        }
     }
     priv->eos_received = false;
     pthread_mutex_unlock(&priv->eos_lock);
 
-    return 0;
+    return ret;
 }
 
 static int agm_compress_partial_drain(void *data)
@@ -897,16 +942,24 @@ static int agm_compress_partial_drain(void *data)
         return ret;
 
     // Send EOS command and wait for EARLY EOS event
-    pthread_mutex_lock(&priv->early_eos_lock);
-    priv->early_eos = true;
     ret = agm_session_eos(handle);
-    if (ret) {
-        AGM_LOGE("%s: EOS fail\n", __func__);
-        pthread_mutex_unlock(&priv->early_eos_lock);
-        return ret;
+    pthread_mutex_lock(&priv->early_eos_lock);
+    if (!priv->eos_received) {
+        priv->early_eos = true;
+        if (ret) {
+            AGM_LOGE("%s: EOS fail\n", __func__);
+            pthread_mutex_unlock(&priv->early_eos_lock);
+            return ret;
+        }
+        pthread_cond_wait(&priv->early_eos_cond, &priv->early_eos_lock);
+        AGM_LOGD("%s: out of early eos wait\n", __func__);
+        if (priv->internal_unblock_early_eos) {
+            AGM_LOGD("%s: out of early eos wait, internally unblocked\n", __func__);
+            priv->internal_unblock_early_eos = false;
+            ret = -ECANCELED;
+            errno = ret;
+        }
     }
-    pthread_cond_wait(&priv->early_eos_cond, &priv->early_eos_lock);
-    AGM_LOGD("%s: out of early eos wait\n", __func__);
     pthread_mutex_unlock(&priv->early_eos_lock);
 
     AGM_LOGV("%s: exit\n", __func__);
@@ -980,6 +1033,16 @@ static int agm_compress_poll(struct agm_compress_priv *priv,
         ret = pthread_cond_wait(&priv->poll_cond, &priv->poll_lock);
     else
         ret = pthread_cond_timedwait(&priv->poll_cond, &priv->poll_lock, &poll_ts);
+
+    if (priv->internal_unblock_write) {
+        AGM_LOGD("%s: out of early eos wait, internally unblocked\n", __func__);
+        priv->internal_unblock_write = false;
+        ret = -ECANCELED;
+        errno = ret;
+        pthread_mutex_unlock(&priv->poll_lock);
+        goto exit;
+    }
+
     pthread_mutex_unlock(&priv->poll_lock);
 
     if (ret == ETIMEDOUT) {
@@ -988,6 +1051,7 @@ static int agm_compress_poll(struct agm_compress_priv *priv,
     } else {
         ret = POLLOUT;
     }
+exit :
     return ret;
 }
 
@@ -1053,6 +1117,7 @@ void agm_compress_close(void *data)
     pthread_mutex_lock(&priv->eos_lock);
     if (priv->eos) {
         pthread_cond_signal(&priv->eos_cond);
+        priv->internal_unblock_eos = true;
         priv->eos = false;
     }
     pthread_mutex_unlock(&priv->eos_lock);
@@ -1061,6 +1126,7 @@ void agm_compress_close(void *data)
     pthread_mutex_lock(&priv->early_eos_lock);
     if (priv->early_eos) {
         pthread_cond_signal(&priv->early_eos_cond);
+        priv->internal_unblock_early_eos = true;
         priv->early_eos = false;
     }
     pthread_mutex_unlock(&priv->early_eos_lock);
@@ -1068,6 +1134,7 @@ void agm_compress_close(void *data)
     /* Signal Poll */
     pthread_mutex_lock(&priv->poll_lock);
     pthread_cond_signal(&priv->poll_cond);
+    priv->internal_unblock_write = true;
     pthread_mutex_unlock(&priv->poll_lock);
 
     /* Make sure callbacks are not running at this point */
@@ -1129,7 +1196,7 @@ void *agm_compress_open_by_name(const char *name,
     struct snd_compr_params params;
     char *token, *token_saveptr;
 
-
+    memset(&params, 0, sizeof(params));
     token_saveptr = token = (char *)name;
     strtok_r(token, ":", &token_saveptr);
 

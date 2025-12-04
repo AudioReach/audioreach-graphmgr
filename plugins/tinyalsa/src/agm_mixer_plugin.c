@@ -44,6 +44,7 @@
 #include <sys/time.h>
 #include <limits.h>
 #include <linux/ioctl.h>
+#include <pthread.h>
 
 #include <sound/asound.h>
 
@@ -1730,7 +1731,7 @@ static struct snd_value_tlv_bytes pcm_setacdbtunnel_bytes =
 static struct snd_value_tlv_bytes pcm_getacdbtunnel_bytes =
     SND_VALUE_TLV_BYTES(256 * 1024, amp_pcm_get_acdb_tunnel_get, amp_pcm_get_acdb_tunnel_put);
 static struct snd_value_tlv_bytes pcm_setparam_bytes =
-    SND_VALUE_TLV_BYTES(512 * 1024, amp_pcm_set_param_get, amp_pcm_set_param_put);
+    SND_VALUE_TLV_BYTES(1024 * 1024, amp_pcm_set_param_get, amp_pcm_set_param_put);
 static struct snd_value_tlv_bytes pcm_getparam_bytes =
     SND_VALUE_TLV_BYTES(128 * 1024, amp_pcm_get_param_get, amp_pcm_get_param_put);
 static struct snd_value_tlv_bytes pcm_event_bytes =
@@ -2244,8 +2245,9 @@ static int amp_form_acdb_ctls(struct amp_priv *amp_priv, int ctl_idx)
 }
 
 static ssize_t amp_read_event(struct mixer_plugin *plugin,
-                              struct mixer_ctl_event *ev, size_t size) 
+                              struct snd_ctl_event *snd_ev, size_t size)
 {
+    struct mixer_ctl_event *ev = (struct mixer_ctl_event *)snd_ev;
     struct amp_priv *amp_priv = plugin->priv;
     ssize_t result = 0;
 

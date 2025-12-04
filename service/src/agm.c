@@ -61,17 +61,14 @@ static void *ats_init_thread(void *obj __unused)
     int retry = 0;
 
     while(retry++ < MAX_RETRIES) {
-        if (agm_initialized) {
-            ret = ats_init();
-            if (0 != ret) {
-                AGM_LOGE("ats_init failed retry %d err %d", retry, ret);
-                usleep(RETRY_INTERVAL_US);
-            } else {
-                AGM_LOGD("ATS initialized");
-                break;
-            }
+        ret = ats_init();
+        if (0 != ret) {
+            AGM_LOGE("ats_init failed retry %d err %d", retry, ret);
+            usleep(RETRY_INTERVAL_US);
+        } else {
+            AGM_LOGD("ATS initialized");
+            break;
         }
-        usleep(RETRY_INTERVAL_US);
     }
     return NULL;
 }
@@ -99,17 +96,18 @@ int agm_init()
     param.sched_priority = SCHED_FIFO;
     pthread_attr_setschedparam (&tattr, &param);
 
-    ret = pthread_create(&ats_thread, (const pthread_attr_t *) &tattr,
-                                           ats_init_thread, NULL);
-    if (ret)
-        AGM_LOGE(" ats init thread creation failed\n");
-
     ret = session_obj_init();
     if (0 != ret) {
         AGM_LOGE("Session_obj_init failed with %d", ret);
         goto exit;
     }
+
     agm_initialized = 1;
+
+    ret = pthread_create(&ats_thread, (const pthread_attr_t *) &tattr,
+                                           ats_init_thread, NULL);
+    if (ret)
+        AGM_LOGE(" ats init thread creation failed\n");
 
 exit:
     return ret;
@@ -157,7 +155,7 @@ int agm_aif_set_metadata(uint32_t aif_id, uint32_t size, uint8_t *metadata)
     int32_t ret = 0;
 
     ret = device_get_obj(aif_id, &obj);
-    if (ret) {
+    if (ret || !obj) {
         AGM_LOGE("Error:%d retrieving device obj with audio_intf id=%d\n",
                                          ret, aif_id);
         goto done;
@@ -181,7 +179,7 @@ int agm_aif_set_media_config(uint32_t aif_id,
     int ret = 0;
 
     ret = device_get_obj(aif_id, &obj);
-    if (ret) {
+    if (ret || !obj) {
         AGM_LOGE("Error:%d, retrieving device obj with audio_intf id=%d\n",
                                                         ret, aif_id);
         goto done;
@@ -323,20 +321,20 @@ int agm_get_params_from_acdb_tunnel(void *payload, size_t *size)
         payloadACDBTunnelInfo->num_kvs,
         payloadACDBTunnelInfo->blob_size);
 
-    ptr = payloadACDBTunnelInfo->blob;
+    ptr = (uint32_t *)payloadACDBTunnelInfo->blob;
     for (k = 0; k < payloadACDBTunnelInfo->blob_size / 4; k++) {
         AGM_LOGV("%d data = 0x%x", k, *ptr++);
     }
 
-    ptr = payloadACDBTunnelInfo->blob + sizeof(struct agm_key_value) *
-            (payloadACDBTunnelInfo->num_gkvs + payloadACDBTunnelInfo->num_kvs);
+    ptr = (uint32_t *)(payloadACDBTunnelInfo->blob + sizeof(struct agm_key_value) *
+            (payloadACDBTunnelInfo->num_gkvs + payloadACDBTunnelInfo->num_kvs));
     // tag is stored at miid. Convertion happens next.
     AGM_LOGI("tag = 0x%x", *ptr);
 
     gkv.num_kvs = payloadACDBTunnelInfo->num_gkvs;
-    gkv.kv = payloadACDBTunnelInfo->blob;
+    gkv.kv = (struct agm_key_value *)payloadACDBTunnelInfo->blob;
 
-    ret = session_dummy_rw_acdb_tunnel(payload, FALSE);
+    ret = session_dummy_rw_acdb_tunnel(payload, false);
     if (ret) {
          AGM_LOGE("Error get tag list");
          goto error;
@@ -380,7 +378,7 @@ int agm_aif_set_params(uint32_t aif_id,
     int32_t ret = 0;
 
     ret = device_get_obj(aif_id, &obj);
-    if (ret) {
+    if (ret || !obj) {
         AGM_LOGE("Error:%d retrieving device obj with audio_intf id=%d\n",
                                          ret, aif_id);
         goto done;
@@ -544,17 +542,17 @@ int agm_set_params_to_acdb_tunnel(void *payload, size_t size)
         payloadACDBTunnelInfo->num_kvs,
         payloadACDBTunnelInfo->blob_size);
 
-    ptr = payloadACDBTunnelInfo->blob;
+    ptr = (uint32_t *)payloadACDBTunnelInfo->blob;
     for (k = 0; k < payloadACDBTunnelInfo->blob_size / 4; k++) {
         AGM_LOGV("%d data = 0x%x", k, *ptr++);
     }
 
-    ptr = payloadACDBTunnelInfo->blob + sizeof(struct agm_key_value) *
-            (payloadACDBTunnelInfo->num_gkvs + payloadACDBTunnelInfo->num_kvs);
+    ptr = (uint32_t *)(payloadACDBTunnelInfo->blob + sizeof(struct agm_key_value) *
+            (payloadACDBTunnelInfo->num_gkvs + payloadACDBTunnelInfo->num_kvs));
     // tag is stored at miid. Convertion happens next.
     AGM_LOGI("tag = 0x%x", *ptr);
 
-    ret = session_dummy_rw_acdb_tunnel(payload, TRUE);
+    ret = session_dummy_rw_acdb_tunnel(payload, true);
     if (ret) {
          AGM_LOGE("Error get tag list");
          goto error;

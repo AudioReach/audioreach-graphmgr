@@ -174,6 +174,40 @@ static void get_default_channel_map(uint8_t *channel_map, int channels)
          channel_map[14] = PCM_CHANNEL_RLC;
          channel_map[15] = PCM_CHANNEL_RRC;
          break;
+    case CHANNELS_32:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_R;
+         channel_map[2] = PCM_CHANNEL_C;
+         channel_map[3] = PCM_CHANNEL_LS;
+         channel_map[4] = PCM_CHANNEL_RS;
+         channel_map[5] = PCM_CHANNEL_LFE;
+         channel_map[6] = PCM_CHANNEL_CS;
+         channel_map[7] = PCM_CHANNEL_LB;
+         channel_map[8] = PCM_CHANNEL_RB;
+         channel_map[9] = PCM_CHANNEL_TS;
+         channel_map[10] = PCM_CHANNEL_CVH;
+         channel_map[11] = PCM_CHANNEL_MS;
+         channel_map[12] = PCM_CHANNEL_FLC;
+         channel_map[13] = PCM_CHANNEL_FRC;
+         channel_map[14] = PCM_CHANNEL_RLC;
+         channel_map[15] = PCM_CHANNEL_RRC;
+         channel_map[16] = PCM_CHANNEL_LFE2;
+         channel_map[17] = PCM_CHANNEL_SL;
+         channel_map[18] = PCM_CHANNEL_SR;
+         channel_map[19] = PCM_CHANNEL_TFL;
+         channel_map[20] = PCM_CHANNEL_TFR;
+         channel_map[21] = PCM_CHANNEL_TC;
+         channel_map[22] = PCM_CHANNEL_TBL;
+         channel_map[23] = PCM_CHANNEL_TBR;
+         channel_map[24] = PCM_CHANNEL_TSL;
+         channel_map[25] = PCM_CHANNEL_TSR;
+         channel_map[26] = PCM_CHANNEL_TBC;
+         channel_map[27] = PCM_CHANNEL_BFC;
+         channel_map[28] = PCM_CHANNEL_BFL;
+         channel_map[29] = PCM_CHANNEL_BFR;
+         channel_map[30] = PCM_CHANNEL_LW;
+         channel_map[31] = PCM_CHANNEL_RW;
+         break;
     }
 }
 
@@ -428,7 +462,7 @@ static int configure_tdm_ep(struct module_info *mod,
     hw_ep_info_t hw_ep_info = dev_obj->hw_ep_info;
     struct gsl_key_vector tag_key_vect;
     struct apm_module_param_data_t *header;
-    struct param_id_tdm_intf_cfg_t* tdm_config;
+    struct param_id_tdm_intf_cfg_t *tdm_config;
     size_t payload_sz, ret_payload_sz = 0;
     uint8_t *payload = NULL;
     struct agm_media_config media_config = (dev_obj->group_data) ?
@@ -501,6 +535,25 @@ static int configure_tdm_ep(struct module_info *mod,
 
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_sz);
     if (ret != 0) {
+        if (ret == AR_EALREADY) {
+            void *payload_copy = calloc(1, sizeof(param_id_tdm_intf_cfg_t));
+            struct param_id_tdm_intf_cfg_t *tdm_config_copy = (struct  param_id_tdm_intf_cfg_t*) payload_copy;
+            if (!payload_copy) {
+                AGM_LOGE("Not enough memory for payload_copy");
+                ret = -ENOMEM;
+                goto free_kvp;
+            }
+            AGM_LOGI("Getting AR_EALREADY, check if Custom_config is the same");
+            memcpy(tdm_config_copy, tdm_config, sizeof(param_id_tdm_intf_cfg_t));
+            int gsl_ret = gsl_get_custom_config(graph_obj->graph_handle, payload, payload_sz);
+            bool is_same = (0 == gsl_ret) && compare_tdm_custom_config(tdm_config_copy, tdm_config);
+            free(payload_copy);
+            if (is_same) {
+                ret = 0;
+                AGM_LOGI("config is the same, bypass EALREADY");
+                goto free_kvp;
+            }
+        }
         ret = ar_err_get_lnx_err_code(ret);
         AGM_LOGE("custom_config for module %d failed with error %d",
                       mod->tag, ret);
@@ -514,6 +567,28 @@ done:
     return ret;
 }
 
+bool compare_tdm_custom_config(param_id_tdm_intf_cfg_t *tdm_config_p1, param_id_tdm_intf_cfg_t *tdm_config_p2) {
+    bool result = false;
+
+    if (!tdm_config_p1 || !tdm_config_p2)
+        goto done;
+
+    if (tdm_config_p1->lpaif_type != tdm_config_p2->lpaif_type) goto done;
+    if (tdm_config_p1->intf_idx != tdm_config_p2->intf_idx) goto done;
+    if (tdm_config_p1->sync_src != tdm_config_p2->sync_src) goto done;
+    if (tdm_config_p1->ctrl_data_out_enable != tdm_config_p2->ctrl_data_out_enable) goto done;
+    if (tdm_config_p1->slot_mask != tdm_config_p2->slot_mask) goto done;
+    if (tdm_config_p1->nslots_per_frame != tdm_config_p2->nslots_per_frame) goto done;
+    if (tdm_config_p1->slot_width != tdm_config_p2->slot_width) goto done;
+    if (tdm_config_p1->sync_mode != tdm_config_p2->sync_mode) goto done;
+    if (tdm_config_p1->ctrl_invert_sync_pulse != tdm_config_p2->ctrl_invert_sync_pulse) goto done;
+
+    /* all fields are are the same, return true */
+    result = true;
+
+done:
+    return result;
+}
 
 static int configure_aux_pcm_ep(struct module_info *mod,
                            struct graph_obj *graph_obj)
@@ -690,7 +765,7 @@ int configure_hw_ep_media_config(struct module_info *mod,
     size_t payload_size = 0;
     struct device_obj *dev_obj = mod->dev_obj;
     struct apm_module_param_data_t* header;
-    struct param_id_hw_ep_mf_t* hw_ep_media_conf;
+    struct param_id_hw_ep_mf_t *hw_ep_media_conf;
     struct agm_media_config media_config = (dev_obj->group_data) ?
                           dev_obj->group_data->media_config.config :dev_obj->media_config;
 
@@ -728,14 +803,54 @@ int configure_hw_ep_media_config(struct module_info *mod,
 
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_size);
     if (ret != 0) {
+        if (ret == AR_EALREADY) {
+            void *payload_copy = calloc(1, sizeof(param_id_hw_ep_mf_t));
+            struct param_id_hw_ep_mf_t *hw_ep_media_conf_copy = (struct param_id_hw_ep_mf_t*) payload_copy;
+            if (!payload_copy) {
+                AGM_LOGE("No memory to allocate for payload_copy");
+                ret = -ENOMEM;
+                goto free_payload;
+            }
+            AGM_LOGI("Getting AR_EALREADY, check if Custom_config is the same");
+            memcpy(hw_ep_media_conf_copy, hw_ep_media_conf, sizeof(param_id_hw_ep_mf_t));
+            AGM_LOGI("payload after set: %p", payload);
+            int gsl_ret = gsl_get_custom_config(graph_obj->graph_handle, payload, payload_size);
+            bool is_same = (0 == gsl_ret) && compare_hw_ep_media_config(hw_ep_media_conf_copy, hw_ep_media_conf);
+            free(payload_copy);
+            if (is_same) {
+                ret = 0;
+                AGM_LOGI("config is the same, bypass EALREADY");
+                goto free_payload;
+            }
+        }
         ret = ar_err_get_lnx_err_code(ret);
         AGM_LOGE("custom_config command for module %d failed with error %d",
                       mod->tag, ret);
     }
+
+free_payload:
     free(payload);
 done:
     AGM_LOGD("exit, ret %d", ret);
     return ret;
+}
+
+bool compare_hw_ep_media_config(param_id_hw_ep_mf_t *hw_ep_media_conf_p1, param_id_hw_ep_mf_t *hw_ep_media_conf_p2) {
+    bool result = false;
+
+    if (!hw_ep_media_conf_p1 || !hw_ep_media_conf_p2)
+        goto done;
+
+    if (hw_ep_media_conf_p1->sample_rate != hw_ep_media_conf_p2->sample_rate) goto done;
+    if (hw_ep_media_conf_p1->bit_width != hw_ep_media_conf_p2->bit_width) goto done;
+    if (hw_ep_media_conf_p1->num_channels != hw_ep_media_conf_p2->num_channels) goto done;
+    if (hw_ep_media_conf_p1->data_format != hw_ep_media_conf_p2->data_format) goto done;
+
+    /* all fields are are the same, return true */
+    result = true;
+
+done:
+    return result;
 }
 
 int configure_hw_ep(struct module_info *mod,
@@ -1949,6 +2064,41 @@ done:
     return ret;
 }
 
+int configure_spr_session_time_reset_info(struct module_info* spr_mod,
+                                          struct graph_obj* graph_obj) {
+    size_t apm_size = sizeof(struct apm_module_param_data_t);
+    size_t param_payload_size = sizeof(struct param_id_spr_session_time_reset_info_t);
+    size_t payload_size = apm_size + param_payload_size;
+
+    ALIGN_PAYLOAD(payload_size, 8);
+    uint8_t bytes[payload_size];
+    memset(bytes, 0, payload_size);
+
+    struct apm_module_param_data_t* header;
+    header = (struct apm_module_param_data_t*)bytes;
+    header->module_instance_id = spr_mod->miid;
+    header->param_id = PARAM_ID_SPR_SESSION_TIME_RESET_INFO;
+    header->error_code = 0x0;
+    header->param_size = param_payload_size;
+
+    struct param_id_spr_session_time_reset_info_t* reset_info =
+            (struct param_id_spr_session_time_reset_info_t*)(bytes + apm_size);
+    reset_info->mode = SPR_SESSION_TIME_SKIP_RESET_GAPLESS_SWITCH;
+
+    int ret = gsl_set_custom_config(graph_obj->graph_handle, bytes, payload_size);
+    if (ret != 0) {
+        ret = ar_err_get_lnx_err_code(ret);
+        AGM_LOGE("failed for PARAM_ID_SPR_SESSION_TIME_RESET_INFO: %d", ret);
+
+        /* To make backward compatibility with ADSP where latest SPR module */
+        /* configuration is not supported and to avoid failing use case     */
+        /* error is not being propagated                                    */
+        return 0;
+    }
+
+    AGM_LOGD("configured");
+    return ret;
+}
 
 int configure_spr(struct module_info *spr_mod,
                             struct graph_obj *graph_obj)
@@ -1997,6 +2147,11 @@ int configure_spr(struct module_info *spr_mod,
 done:
     if (payload)
         free(payload);
+
+    if (ret == 0 && graph_obj->state != STARTED) {
+        ret = configure_spr_session_time_reset_info(spr_mod, graph_obj);
+    }
+
     return ret;
 }
 

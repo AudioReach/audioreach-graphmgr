@@ -27,6 +27,7 @@
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
+
 #define LOG_TAG "PLUGIN: pcm"
 
 #include <agm/agm_api.h>
@@ -39,6 +40,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <string.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <tinyalsa/plugin.h>
@@ -60,7 +62,7 @@
 #define AGM_PULL_PUSH_FRAME_CNT_RETRY_COUNT 5
 
 /* multiplier of timeout for wating for mmap buffers */
-#define MMAP_TOUT_MULTI 4
+#define MMAP_TOUT_MULTI 8
 
 struct agm_shared_pos_buffer {
     volatile uint32_t frame_counter;
@@ -80,6 +82,7 @@ struct pcm_plugin_pos_buf_info {
     uint32_t wall_clk_msw;
     uint32_t wall_clk_lsw;
     uint32_t frame_counter;
+    snd_pcm_uframes_t last_app_ptr; /* Track last app_ptr position */
 };
 
 struct agm_mmap_buffer_port {
@@ -316,6 +319,7 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
     int ret = 0;
     uint32_t period_size = priv->period_size; /** in frames */
     uint32_t crossed_boundary = 0;
+    snd_pcm_uframes_t boundary = 0;
     uint32_t old_frame_counter = priv->pos_buf->frame_counter;
 
     do {
@@ -331,8 +335,9 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
 
         // Update new_hw_ptr
         __builtin_uaddl_overflow(hw_base, pos, &new_hw_ptr);
-        __builtin_uaddl_overflow(new_hw_ptr,
-            priv->pos_buf->boundary * priv->pos_buf->crossed_boundary_cnt, &new_hw_ptr);
+        __builtin_umull_overflow(priv->pos_buf->boundary,
+                                 priv->pos_buf->crossed_boundary_cnt, &boundary);
+        __builtin_uaddl_overflow(new_hw_ptr, boundary, &new_hw_ptr);
 
         // Set delta_wall_clk_us only if cached wall clk is non-zero
         if (priv->pos_buf->wall_clk_msw || priv->pos_buf->wall_clk_lsw) {
@@ -349,9 +354,9 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
         // hw ptr has jumped through by checking wall clock time delta
         // and assuming read ptr moved at a constant rate
         if (delta_wall_clk_us > 0 ) {
-            delta_wall_clk_frames = ((delta_wall_clk_us / 1000000)
-                                        * (priv->media_config->rate)
-                                        * priv->media_config->channels);
+            __builtin_mul_overflow(delta_wall_clk_us / 1000000,
+                (priv->media_config->rate * priv->media_config->channels),
+                 &delta_wall_clk_frames);
             crossed_boundary = delta_wall_clk_frames / priv->total_size_frames;
         }
 
@@ -382,8 +387,9 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
                     priv->pos_buf->crossed_boundary_cnt += 1;
                 }
                 __builtin_uaddl_overflow(hw_base, pos, &new_hw_ptr);
-                __builtin_uaddl_overflow(new_hw_ptr,
-                    priv->pos_buf->boundary * priv->pos_buf->crossed_boundary_cnt, &new_hw_ptr);
+                __builtin_umull_overflow(priv->pos_buf->boundary,
+                                         priv->pos_buf->crossed_boundary_cnt, &boundary);
+                __builtin_uaddl_overflow(new_hw_ptr, boundary, &new_hw_ptr);
                 priv->pos_buf->hw_ptr_base = hw_base;
             }
         }
@@ -711,6 +717,8 @@ static int agm_pcm_close(struct pcm_plugin *plugin)
     if (priv->buf_info) {
         if (priv->buf_info->data_buf_fd != -1)
             close(priv->buf_info->data_buf_fd);
+        if (priv->buf_info->pos_buf_fd != -1)
+            close(priv->buf_info->pos_buf_fd);
         free(priv->buf_info);
     }
     free(plugin->priv);
@@ -763,6 +771,10 @@ static int agm_pcm_poll(struct pcm_plugin *plugin, struct pollfd *pfd,
 
     avail = agm_pcm_get_avail(plugin);
 
+    if(priv->mmap_buf_tout &&
+       priv->pos_buf->last_app_ptr != priv->pos_buf->appl_ptr)
+        priv->mmap_buf_tout = 0;
+
     if (avail < period_size) {
         if (timeout == 0) //wait for 1msec
             timeout = 1;
@@ -784,6 +796,7 @@ static int agm_pcm_poll(struct pcm_plugin *plugin, struct pollfd *pfd,
     } else {
         ret = 0; /* TIMEOUT */
         priv->mmap_buf_tout += timeout;
+        priv->pos_buf->last_app_ptr = priv->pos_buf->appl_ptr;
         if (priv->mmap_buf_tout > (period_to_msec * MMAP_TOUT_MULTI)) {
             AGM_LOGE("timeout in waiting for mmap buffer");
             priv->mmap_buf_tout = 0;
@@ -838,6 +851,10 @@ static void* agm_pcm_mmap(struct pcm_plugin *plugin, void *addr __unused, size_t
             pos->pos_buf_addr = mmap(0, priv->buf_info->pos_buf_size,
                     PROT_READ | PROT_WRITE, MAP_SHARED,
                     priv->buf_info->pos_buf_fd, 0);
+            if (pos->pos_buf_addr == MAP_FAILED) {
+                free(pos);
+                return MAP_FAILED;
+            }
 
             priv->pos_buf = pos;
 
@@ -882,21 +899,15 @@ static int agm_pcm_munmap(struct pcm_plugin *plugin, void *addr, size_t length)
     return munmap(addr, length);
 }
 
-static int agm_pcm_ioctl(struct pcm_plugin *plugin, int cmd, ...)
+static int agm_pcm_ioctl(struct pcm_plugin *plugin, int cmd, void *arg)
 {
     struct agm_pcm_priv *priv = plugin->priv;
     uint64_t handle;
     int ret = 0;
-    va_list ap;
-    void *arg;
 
     ret = agm_get_session_handle(priv, &handle);
     if (ret)
         return ret;
-
-    va_start(ap, cmd);
-    arg = va_arg(ap, void *);
-    va_end(ap);
 
     switch (cmd) {
     case SNDRV_PCM_IOCTL_RESET:
@@ -919,7 +930,7 @@ int agm_pcm_open(struct pcm_plugin **plugin, unsigned int card,
     struct agm_buffer_config *buffer_config;
     uint64_t handle;
     enum agm_session_mode sess_mode = AGM_SESSION_DEFAULT;
-    int ret = 0, session_id = device;
+    int ret = 0, session_id = device, sess_mode_val = 0;
     void *card_node, *pcm_node;
 
     agm_pcm_plugin = calloc(1, sizeof(struct pcm_plugin));
@@ -981,7 +992,8 @@ int agm_pcm_open(struct pcm_plugin **plugin, unsigned int card,
     priv->dev_node = pcm_node;
     priv->session_id = session_id;
     priv->mmap_status = false;
-    snd_card_def_get_int(pcm_node, "session_mode", &sess_mode);
+    snd_card_def_get_int(pcm_node, "session_mode", &sess_mode_val);
+    sess_mode = (enum agm_session_mode)sess_mode_val;
 
     ret = agm_session_open(session_id, sess_mode, &handle);
     if (ret) {

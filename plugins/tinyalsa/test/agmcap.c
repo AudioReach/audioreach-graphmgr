@@ -29,6 +29,7 @@
 ** Changes from Qualcomm Innovation Center are provided under the following license:
 ** Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
+
 */
 
 #include <tinyalsa/asoundlib.h>
@@ -68,8 +69,8 @@ struct wav_header {
 int capturing = 1;
 
 static unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
-                            unsigned int channels, unsigned int rate,
-                            enum pcm_format format, unsigned int period_size,
+                            unsigned int usb_device, unsigned int channels, unsigned int rate,
+                            unsigned int bits, enum pcm_format format, unsigned int period_size,
                             unsigned int period_count, unsigned int cap_time,
                             struct device_config *dev_config, unsigned int stream_kv,
                             unsigned int device_kv, unsigned int instance_kv,
@@ -88,7 +89,8 @@ static void usage(void)
            " [-dppkv deviceppkv] : Assign 0 if no device pp in the graph\n"
            " [-ikv instance_kv] :  Assign 0 if no instance kv in the graph\n"
            " [-skv stream_kv]\n"
-           " [is_24_LE] : [0-1] Only to be used if user wants to record 32 bps clip\n"
+           " [-is_24_LE] : [0-1] Only to be used if user wants to record 32 bps clip\n"
+           " [-usb_d usb device]\n"
            " 0: If bps is 32, and format should be S32_LE\n"
            " 1: If bps is 24, and format should be S24_LE\n");
 }
@@ -99,8 +101,9 @@ int main(int argc, char **argv)
     struct wav_header header;
     unsigned int card = 100;
     unsigned int device = 101;
+    unsigned int usb_device = 1;
     unsigned int channels = 2;
-    unsigned int rate = 44100;
+    unsigned int rate = 48000;
     unsigned int bits = 16;
     unsigned int frames;
     unsigned int period_size = 1024;
@@ -186,7 +189,11 @@ int main(int argc, char **argv)
             argv++;
             if (*argv)
                 is_24_LE = atoi(*argv);
-        } else if (strcmp(*argv, "-help") == 0) {
+        } else if (strcmp(*argv, "-usb_d") == 0) {
+            argv++;
+            if (*argv)
+                usb_device = atoi(*argv);
+        }else if (strcmp(*argv, "-help") == 0) {
             usage();
         }
         if (*argv)
@@ -203,26 +210,29 @@ int main(int argc, char **argv)
     header.sample_rate = rate;
 
     switch (bits) {
-    case 32:
-        if (is_24_LE)
-            format = PCM_FORMAT_S24_LE;
-        else
-            format = PCM_FORMAT_S32_LE;
-        break;
-    case 24:
-        format = PCM_FORMAT_S24_3LE;
-        break;
-    case 16:
-        format = PCM_FORMAT_S16_LE;
-        break;
-    default:
-        printf("%u bits is not supported.\n", bits);
-        fclose(file);
-        return 1;
+        case 32:
+            if (is_24_LE)
+                format = PCM_FORMAT_S24_LE;
+            else
+                format = PCM_FORMAT_S32_LE;
+            break;
+        case 24:
+            format = PCM_FORMAT_S24_3LE;
+            break;
+        case 16:
+            format = PCM_FORMAT_S16_LE;
+            break;
+        default:
+            printf("%u bits is not supported.\n", bits);
+            fclose(file);
+            return 1;
     }
 
     if (intf_name == NULL)
         return 1;
+
+    printf("Stream kv= 0x%X, Instance kv = 0x%X, Device PP kv= 0x%X, Device kv = 0x%X\n",
+            stream_kv, instance_kv, devicepp_kv, device_kv);
 
     ret = get_device_media_config(BACKEND_CONF_FILE, intf_name, &config);
     if (ret) {
@@ -247,8 +257,8 @@ int main(int argc, char **argv)
     signal(SIGINT, sigint_handler);
     signal(SIGHUP, sigint_handler);
     signal(SIGTERM, sigint_handler);
-    frames = capture_sample(file, card, device, header.num_channels,
-                            header.sample_rate, format,
+    frames = capture_sample(file, card, device, usb_device, header.num_channels,
+                            header.sample_rate, bits, format,
                             period_size, period_count, cap_time, &config,
                             stream_kv, device_kv, instance_kv, devicepp_kv);
     printf("Captured %u frames\n", frames);
@@ -265,8 +275,8 @@ int main(int argc, char **argv)
 }
 
 unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
-                            unsigned int channels, unsigned int rate,
-                            enum pcm_format format, unsigned int period_size,
+                            unsigned int usb_device, unsigned int channels, unsigned int rate,
+                            unsigned int bits, enum pcm_format format, unsigned int period_size,
                             unsigned int period_count, unsigned int cap_time,
                             struct device_config *dev_config, unsigned int stream_kv,
                             unsigned int device_kv, unsigned int instance_kv, unsigned int devicepp_kv)
@@ -283,6 +293,10 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
     struct timespec now;
     uint32_t miid = 0;
     int ret = 0;
+    struct usbAudioConfig cfg;
+    uint8_t* payload = NULL;
+    size_t payloadSize = 0;
+
     stream_kv = stream_kv ? stream_kv : PCM_RECORD;
 
     memset(&config, 0, sizeof(config));
@@ -295,10 +309,22 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
     config.stop_threshold = 0;
     config.silence_threshold = 0;
 
+    if (NULL == intf_name) {
+        printf("No interface name mentioned, Exiting !!!\n");
+        return 0;
+    }
+
     mixer = mixer_open(card);
     if (!mixer) {
         printf("Failed to open mixer\n");
         return 0;
+    }
+
+    if(strcmp(intf_name, "USB_AUDIO-TX") == 0) {
+        dev_config->rate = rate;
+        dev_config->ch = channels;
+        dev_config->bits = bits;
+        dev_config->format = PCM_FORMAT_INVALID;
     }
 
     /* set device/audio_intf media config mixer control */
@@ -329,7 +355,7 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
         }
     }
 
-    ret = agm_mixer_get_miid (mixer, device, intf_name, STREAM_PCM, TAG_STREAM_MFC, &miid);
+    ret = agm_mixer_get_miid(mixer, device, intf_name, STREAM_PCM, TAG_STREAM_MFC, &miid);
     if (ret) {
         printf("MFC not present for this graph\n");
     } else {
@@ -338,6 +364,27 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
             printf("Failed to configure stream mfc\n");
             goto err_close_mixer;
         }
+    }
+
+    if (strcmp(intf_name, "USB_AUDIO-TX") == 0) {
+        ret = agm_mixer_get_miid (mixer, device, intf_name, STREAM_PCM, DEVICE_HW_ENDPOINT_TX, &miid);
+        if (ret == 0) {
+            cfg.usb_token = (usb_device << 16)|0x1;
+            cfg.svc_interval = 0;
+            get_agm_usb_audio_config_payload(&payload, &payloadSize, miid, &cfg);
+
+            if (payloadSize) {
+                ret = set_agm_device_custom_payload(mixer, intf_name, payload, payloadSize);
+            } else {
+                ret = -1;
+                printf("set_agm_device_custom_payload failed\n");
+                goto err_close_mixer;
+            }
+        } else {
+            printf("Failed to get miid for USB_AUDIO-TX\n");
+            goto err_close_mixer;
+        }
+
     }
 
     /* connect pcm stream to audio intf */
@@ -353,13 +400,14 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
         goto err_close_mixer;
     }
 
-    size = pcm_frames_to_bytes(pcm, pcm_get_buffer_size(pcm));
-    buffer = malloc(size);
+    size = pcm_frames_to_bytes(pcm, config.period_size);
+    buffer = (char*)malloc(sizeof(char) * size);
     if (!buffer) {
         printf("Unable to allocate %u bytes\n", size);
         goto err_close_pcm;
     }
 
+    memset(buffer, 0, sizeof(char) * size);
     printf("Capturing sample: %u ch, %u hz, %u bit\n", channels, rate,
            pcm_format_to_bits(format));
 
@@ -387,13 +435,19 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
     }
 
     frames = pcm_bytes_to_frames(pcm, bytes_read);
-    free(buffer);
 
     pcm_stop(pcm);
+    if (buffer != NULL) {
+        free(buffer);
+        buffer = NULL;
+    }
 err_close_pcm:
     connect_agm_audio_intf_to_stream(mixer, device, intf_name, STREAM_PCM, false);
     pcm_close(pcm);
 err_close_mixer:
+    if (payload) {
+      free(payload);
+    }
     mixer_close(mixer);
     return frames;
 }
