@@ -10,4 +10,4 @@ cd ..
 cp -R build/usr/* /tmp/rootfs/usr/
 cp -R build/etc/* /tmp/rootfs/etc/
 touch Sample_files.txt
-cp -R Sample_files.txt /tmp/rootfs/etc/
+
