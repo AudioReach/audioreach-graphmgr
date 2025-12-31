@@ -54,6 +54,8 @@ extern "C" {
 
 struct session_obj;
 
+struct ABC;
+
 /**<
  * used to indicate a given buffer is the final buffer, client will get
  * notified once the buffer has been rendered
