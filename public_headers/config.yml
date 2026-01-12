@@ -3,6 +3,6 @@ project: https://github.com/AudioReach/audioreach-graphmgr
 branches:
   master:
     modes:
-      non-blocking:
+      blocking:
         headers:
           - service/inc/public/agm/agm_api.h
