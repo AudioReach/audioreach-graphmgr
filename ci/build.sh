@@ -17,4 +17,4 @@ autoconf --force
 # make
 make DESTDIR=${GITHUB_WORKSPACE}/build install
 
-echo "Sample test"
+echo "Sample test for workflows"
