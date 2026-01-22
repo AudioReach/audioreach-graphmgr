@@ -2,7 +2,7 @@ name: Run ARMOR via action
 on:
   push:
     branches: [ master ]
-  pull_request_target:
+  pull_request:
     branches: [ master ]
   workflow_dispatch:
     inputs:
@@ -37,7 +37,7 @@ jobs:
         id: ev
         run: |
           echo "event_name=${{ github.event_name }}" >> "$GITHUB_OUTPUT"
-          if [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             echo "head_sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
             echo "base_sha=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
             echo "branch_name=${{ github.event.pull_request.base.ref }}" >> "$GITHUB_OUTPUT"
