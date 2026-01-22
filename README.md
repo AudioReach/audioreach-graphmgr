@@ -8,6 +8,7 @@ This repository hosts following software components for Linux:
 - TinyALSA PCM and Mixer plugins
 - card-def parser
 
+
 ## Documentation
 
 Refer AudioReach docs [here](https://audioreach.github.io/)
