@@ -30,8 +30,8 @@
  *
  * Copyright (c) 2023, Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
- *
  */
+
 #ifndef GPH_MODULE_H
 #define GPH_MODULE_H
 
@@ -56,6 +56,7 @@
 #include "gapless_api.h"
 #include "pcm_encoder_api.h"
 #include "aac_encoder_api.h"
+#include "audio_if_api.h"
 
 /*
  *Internal enum to identify different modules
