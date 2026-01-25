@@ -227,7 +227,7 @@ static unsigned int alsa_to_sndrv_format(enum pcm_format fmt)
     };
 }
 
-static enum pcm_format get_pcm_format(char *str)
+static enum pcm_format get_pcm_format(const char *str)
 {
     if (!strncmp(str, "PCM_FORMAT_S16_LE", strlen("PCM_FORMAT_S16_LE"))) {
         return PCM_FORMAT_S16_LE;
@@ -246,8 +246,6 @@ static enum pcm_format get_pcm_format(char *str)
 
 int get_tinyalsa_pcm_bit_width(enum pcm_format fmt_id)
 {
-    int bit_width = 16;
-
     switch (fmt_id) {
     case PCM_FORMAT_S24_3LE:
     /*
@@ -257,19 +255,15 @@ int get_tinyalsa_pcm_bit_width(enum pcm_format fmt_id)
      *return 32
      */
     case PCM_FORMAT_S24_LE:
-        bit_width = 24;
-        break;
+        return 24;
     case PCM_FORMAT_S32_LE:
-        bit_width = 32;
-        break;
+        return 32;
     case PCM_FORMAT_S8:
-        bit_width = 8;
+        return 8;
     case PCM_FORMAT_S16_LE:
     default:
-        break;
+        return 16;
     }
-
-    return bit_width;
 }
 
 static int get_device_channel_allocation(int num_channels)
@@ -516,9 +510,7 @@ int get_group_device_info(char* filename, char *intf_name, struct group_config *
 
 int set_agm_group_device_config(struct mixer *mixer, char *intf_name, struct group_config *config)
 {
-    char *stream = "PCM";
     char *grp_ctl = "grp config";
-    char *control = "setParamTag";
     char *mixer_str = NULL;
     struct mixer_ctl *ctl;
     long grp_config[5];
@@ -579,7 +571,7 @@ int set_agm_group_mux_config(struct mixer *mixer, unsigned int device, struct gr
     char *control = "setParamTag";
     char *mixer_str = NULL;
     struct mixer_ctl *ctl;
-    int ctl_len = 0, val_len;
+    int ctl_len = 0, tag_config_len;
     int ret = 0;
     struct agm_tag_config* tag_config = NULL;
     uint32_t miid = 0;
@@ -595,9 +587,9 @@ int set_agm_group_mux_config(struct mixer *mixer, unsigned int device, struct gr
         goto done;
     }
 
-    val_len = sizeof(struct agm_tag_config) + sizeof(struct agm_key_value);
+    tag_config_len = sizeof(struct agm_tag_config) + sizeof(struct agm_key_value);
 
-    tag_config = (struct agm_tag_config*)calloc(1, val_len);
+    tag_config = (struct agm_tag_config*)calloc(1, tag_config_len);
     if (!tag_config)
         goto done;
 
@@ -620,7 +612,7 @@ int set_agm_group_mux_config(struct mixer *mixer, unsigned int device, struct gr
         goto done;
     }
 
-    mixer_ctl_set_array(ctl, tag_config, val_len);
+    mixer_ctl_set_array(ctl, tag_config, tag_config_len);
 done:
     if (mixer_str)
         free(mixer_str);
@@ -742,8 +734,8 @@ int connect_play_pcm_to_cap_pcm(struct mixer *mixer, unsigned int p_device, unsi
     char *mixer_str;
     struct mixer_ctl *ctl;
     int ctl_len = 0;
-    char *val;
-    int val_len = 0;
+    char *p_stream;
+    int p_stream_len = 0;
     int ret = 0;
 
     ctl_len = strlen(pcm) + 4 + strlen(control) + 1;
@@ -761,18 +753,18 @@ int connect_play_pcm_to_cap_pcm(struct mixer *mixer, unsigned int p_device, unsi
         return ENOENT;
     }
 
-    val_len = strlen(pcm) + 4;
-    val = calloc(1, val_len);
-    if (!val) {
-        printf("val calloc failed\n");
+    p_stream_len = strlen(pcm) + 4;
+    p_stream = calloc(1, p_stream_len);
+    if (!p_stream) {
+        printf("p_stream calloc failed\n");
         free(mixer_str);
         return -ENOMEM;
     }
-    snprintf(val, val_len, "%s%d", pcm, p_device);
+    snprintf(p_stream, p_stream_len, "%s%d", pcm, p_device);
 
-    ret = mixer_ctl_set_enum_by_string(ctl, val);
+    ret = mixer_ctl_set_enum_by_string(ctl, p_stream);
     free(mixer_str);
-    free(val);
+    free(p_stream);
 
     return ret;
 }
@@ -848,8 +840,8 @@ int agm_mixer_set_ecref_path(struct mixer *mixer, unsigned int device, enum stre
     return ret;
 }
 
-int set_agm_audio_intf_metadata(struct mixer *mixer, char *intf_name, unsigned int dkv,
-                                enum usecase_type usecase, int rate, int bitwidth, uint32_t val)
+int set_agm_audio_intf_metadata(struct mixer *mixer, char *intf_name, unsigned int device_kv,
+                                enum usecase_type usecase, int rate, int bitwidth, uint32_t stream_kv)
 {
     char *control = "metadata";
     struct mixer_ctl *ctl;
@@ -886,16 +878,16 @@ int set_agm_audio_intf_metadata(struct mixer *mixer, char *intf_name, unsigned i
 
     if (usecase == PLAYBACK) {
         gkv[0].key = DEVICERX;
-        gkv[0].value = dkv ? dkv : SPEAKER;
+        gkv[0].value = device_kv ? device_kv : SPEAKER;
     } else if (usecase == HAPTICS) {
         gkv[0].key = DEVICERX;
         gkv[0].value = HAPTICS_DEVICE;
-    } else if (val == VOICE_UI) {
+    } else if (stream_kv == VOICE_UI) {
         gkv[0].key = DEVICETX;
-        gkv[0].value = dkv ? dkv : HANDSETMIC_VA;
+        gkv[0].value = device_kv ? device_kv : HANDSETMIC_VA;
     } else {
         gkv[0].key = DEVICETX;
-        gkv[0].value = dkv ? dkv : HANDSETMIC;
+        gkv[0].value = device_kv ? device_kv : HANDSETMIC;
     }
 
     printf("gkv key= 0x%x, value= 0x%x\n", gkv[0].key, gkv[0].value);
@@ -956,7 +948,7 @@ int set_agm_audio_intf_metadata(struct mixer *mixer, char *intf_name, unsigned i
     return ret;
 }
 
-int set_agm_stream_metadata_type(struct mixer *mixer, int device, char *val, enum stream_type stype)
+int set_agm_stream_metadata_type(struct mixer *mixer, int device, char *type, enum stream_type stype)
 {
     char *stream = "PCM";
     char *control = "control";
@@ -982,7 +974,7 @@ int set_agm_stream_metadata_type(struct mixer *mixer, int device, char *val, enu
         return ENOENT;
     }
 
-    ret = mixer_ctl_set_enum_by_string(ctl, val);
+    ret = mixer_ctl_set_enum_by_string(ctl, type);
     free(mixer_str);
     return ret;
 }
@@ -1125,8 +1117,7 @@ void populateChannelMap(uint16_t *pcmChannel, uint8_t numChannel)
     }
 }
 
-int configure_mfc(struct mixer *mixer, int device, char *intf_name, int tag,
-                  enum stream_type stype, unsigned int rate,
+int configure_mfc(struct mixer *mixer, int device, enum stream_type stype, unsigned int rate,
                   unsigned int channels, unsigned int bits, uint32_t miid)
 {
     int ret = 0;
@@ -1170,11 +1161,9 @@ int configure_mfc(struct mixer *mixer, int device, char *intf_name, int tag,
     return ret;
 }
 
-int configure_pcm_converter(struct mixer *mixer, int device, char *intf_name, int tag,
-                  enum stream_type stype, unsigned int rate,
-                  unsigned int channels, unsigned int bits)
+int configure_pcm_converter(struct mixer *mixer, int device, enum stream_type stype, 
+                            unsigned int channels, unsigned int bits_per_sample, uint32_t miid)
 {
-
     struct apm_module_param_data_t* header = NULL;
     struct media_format_t *mediaFmtHdr;
     struct payload_pcm_output_format_cfg_t *mediaFmtPayload;
@@ -1183,7 +1172,6 @@ int configure_pcm_converter(struct mixer *mixer, int device, char *intf_name, in
     uint8_t *pcmChannel = NULL;
     uint16_t *temp = NULL;
     int ret = 0;
-    uint32_t miid = 0;
 
     payloadSize = sizeof(struct apm_module_param_data_t) +
                   sizeof(struct media_format_t) +
@@ -1255,7 +1243,7 @@ int configure_pcm_converter(struct mixer *mixer, int device, char *intf_name, in
     return ret;
 }
 
-int set_agm_capture_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum usecase_type usecase,
+int set_agm_capture_stream_metadata(struct mixer *mixer, int device, uint32_t stream_kv, enum usecase_type usecase,
                                     enum stream_type stype, unsigned int instance_kv)
 {
     char *stream = "PCM";
@@ -1298,7 +1286,7 @@ int set_agm_capture_stream_metadata(struct mixer *mixer, int device, uint32_t va
     }
 
     gkv[index].key = STREAMTX;
-    gkv[index].value = val;
+    gkv[index].value = stream_kv;
     index++;
 
     if (instance_kv != 0) {
@@ -1394,6 +1382,7 @@ int set_agm_dp_audio_config_metadata(char *intf_name, struct mixer *mixer, uint3
     mixer_str = calloc(1, ctl_len);
     if (!mixer_str) {
         printf("alloc mixer_str fail\n");
+        free(payloadInfo);
         return -ENOMEM;
     }
 
@@ -1401,14 +1390,19 @@ int set_agm_dp_audio_config_metadata(char *intf_name, struct mixer *mixer, uint3
     ctl = mixer_get_ctl_by_name(mixer, mixer_str);
     if (!ctl) {
         printf("%s: invalid mixer control:\n", __func__);
+        free(payloadInfo);
+        free(mixer_str);
         return -EINVAL;
     }
 
     ret =  mixer_ctl_set_array(ctl, payloadInfo, payloadSize);
+
+    free(payloadInfo);
+    free(mixer_str);
     return ret;
 }
 
-int set_agm_streamdevice_metadata(struct mixer *mixer, int device, uint32_t val, enum usecase_type usecase,
+int set_agm_streamdevice_metadata(struct mixer *mixer, int device, uint32_t stream_kv, enum usecase_type usecase,
                                   enum stream_type stype, char *intf_name,
                                   unsigned int devicepp_kv)
 {
@@ -1457,20 +1451,20 @@ int set_agm_streamdevice_metadata(struct mixer *mixer, int device, uint32_t val,
         free(metadata);
         return -ENOMEM;
     }
-    if (val == VOICE_UI) {
+    if (stream_kv == VOICE_UI) {
         gkv[index].key = STREAMTX;
-        gkv[index].value = val;
+        gkv[index].value = stream_kv;
         index++;
     } else if (usecase == PLAYBACK) {
         gkv[index].key = STREAMRX;
-        gkv[index].value = val;
+        gkv[index].value = stream_kv;
         index++;
     } else if (usecase == CAPTURE) {
         gkv[index].key = STREAMTX;
-        gkv[index].value = val;
+        gkv[index].value = stream_kv;
         index++;
     }
-    if (val == VOICE_UI) {
+    if (stream_kv == VOICE_UI) {
         gkv[index].key = DEVICEPP_TX;
         gkv[index].value = devicepp_kv;
         index++;
@@ -1537,7 +1531,7 @@ int set_agm_streamdevice_metadata(struct mixer *mixer, int device, uint32_t val,
     return ret;
 }
 
-int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum usecase_type usecase,
+int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t stream_kv, enum usecase_type usecase,
                             enum stream_type stype, unsigned int instance_kv)
 {
     char *stream = "PCM";
@@ -1562,7 +1556,7 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
     if (instance_kv != 0)
        num_gkv += 1;
 
-    if (val == VOICE_UI) {
+    if (stream_kv == VOICE_UI) {
         num_gkv = 3;
     }
 
@@ -1588,9 +1582,9 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
         return -ENOMEM;
     }
 
-    if (val == VOICE_UI) {
+    if (stream_kv == VOICE_UI) {
         gkv[index].key = STREAMTX;
-        gkv[index].value = val;
+        gkv[index].value = stream_kv;
         index++;
         if (instance_kv != 0){
             gkv[index].key = INSTANCE;
@@ -1602,7 +1596,7 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
         index++;
     } else if (usecase == PLAYBACK) {
         gkv[index].key = STREAMRX;
-        gkv[index].value = val;
+        gkv[index].value = stream_kv;
         index++;
 
         if (instance_kv != 0) {
@@ -1613,7 +1607,7 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
         }
     } else if (usecase == LOOPBACK) {
         gkv[index].key = STREAMRX;
-        gkv[index].value = val;
+        gkv[index].value = stream_kv;
         index++;
     }
 
