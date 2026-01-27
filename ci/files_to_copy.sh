@@ -9,3 +9,4 @@ cd ..
 # copy the build artifacts to a temporary directory
 cp -R build/usr/* /tmp/rootfs/usr/
 cp -R build/etc/* /tmp/rootfs/etc/
+echo "Test sample"
