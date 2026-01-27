@@ -10,3 +10,4 @@ cd ..
 cp -R build/usr/* /tmp/rootfs/usr/
 cp -R build/etc/* /tmp/rootfs/etc/
 echo "Testing workflows to test"
+echo "sample run"
