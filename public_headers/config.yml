@@ -1,7 +1,7 @@
 project: https://github.com/AudioReach/audioreach-graphmgr
 
 branches:
-  master:
+  upstream:
     modes:
       blocking:
         headers:
