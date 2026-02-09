@@ -44,3 +44,6 @@ jobs:
     needs: [ load_parameters, build, process_image ]
     uses: Audioreach/audioreach-workflows/.github/workflows/test.yml@upstream
     secrets: inherit
+    
+    with:
+      build_matrix: ${{ needs.load_parameters.outputs.build_matrix }}
