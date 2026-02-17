@@ -32,6 +32,7 @@
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
+
 #define LOG_TAG "AGM: graph_module"
 
 #include <errno.h>
