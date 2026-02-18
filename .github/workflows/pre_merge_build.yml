@@ -67,7 +67,7 @@ jobs:
                   | map(select(.value.testing_enabled == true))
                   | from_entries
                 elif type == "array" then
-                  {include: map(select(.testing_enabled == true))}
+                  map(select(.testing_enabled == true))  # <-- Just return the array
                 else
                   error("Unsupported build_matrix JSON type: " + (type|tostring))
                 end
@@ -80,7 +80,7 @@ jobs:
             echo "test_matrix=$FILTERED" >> "$GITHUB_OUTPUT"
           
   trigger_lava:
-    needs: [ load_parameters, build, process_image, filter_test_matrix ]
+    needs: [ process_image, filter_test_matrix ]
     uses: Audioreach/audioreach-workflows/.github/workflows/test.yml@PR
     secrets: inherit
     with:
