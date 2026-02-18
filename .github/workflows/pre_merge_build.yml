@@ -39,10 +39,31 @@ jobs:
       build_matrix: ${{ needs.load_parameters.outputs.build_matrix }}
       pr_ref: ${{ github.event.pull_request.head.ref }}
       pr_repo: ${{ github.event.pull_request.head.repo.full_name }}
+      
+  filter_test_matrix:
+    needs: load_parameters
+    runs-on: ubuntu-latest
+    outputs:
+      test_matrix: ${{ steps.filter.outputs.test_matrix }}
+    steps:
+      - id: filter
+        shell: bash
+        run: |
+          MATRIX='${{ needs.load_parameters.outputs.build_matrix }}'
 
+          # Keep only entries with Testing_enabled=true
+          FILTERED=$(echo "$MATRIX" | jq -c '
+            to_entries
+            | map(select(.value.testing_enabled == true))
+            | from_entries
+          ')
+
+          echo "test_matrix=$FILTERED" >> "$GITHUB_OUTPUT"
+          echo "Filtered matrix: $FILTERED"          # prints to console (job log) 
+          
   trigger_lava:
     needs: [ load_parameters, build, process_image ]
     uses: Audioreach/audioreach-workflows/.github/workflows/test.yml@PR
     secrets: inherit
     with:
-      build_matrix: ${{ needs.load_parameters.outputs.build_matrix }}
+      build_matrix: ${{ needs.filter_test_matrix.outputs.test_matrix }}
