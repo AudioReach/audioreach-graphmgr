@@ -6,6 +6,7 @@
 #include <agm/agm_memlogger.h>
 #include <agm/utils.h>
 
+
 void agm_memlog_init()
 {
     int ret = 0;

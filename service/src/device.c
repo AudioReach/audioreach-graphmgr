@@ -260,6 +260,7 @@ int device_open(struct device_obj *dev_obj)
         AGM_LOGE("Default config not available for %s, exiting", pcm_name);
         goto done;
     }
+	
     snd_pcm_hw_params_set_access(pcm, hwparams, SND_PCM_ACCESS_RW_INTERLEAVED);
     snd_pcm_hw_params_set_format(pcm, hwparams, format);
     snd_pcm_hw_params_set_channels(pcm, hwparams, channels);
