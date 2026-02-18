@@ -42,7 +42,7 @@ jobs:
 
   trigger_lava:
     needs: [ load_parameters, build, process_image ]
-    if: ${{ fromJSON(needs.load_parameters.outputs.build_matrix).testing_enabled }
+    if: ${{ fromJSON(needs.load_parameters.outputs.build_matrix).testing_enabled }}
     uses: Audioreach/audioreach-workflows/.github/workflows/test.yml@PR
     secrets: inherit
     with:
