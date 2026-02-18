@@ -49,20 +49,38 @@ jobs:
       - id: filter
         shell: bash
         run: |
-          MATRIX='${{ needs.load_parameters.outputs.build_matrix }}'
-
-          # Keep only entries with Testing_enabled=true
-          FILTERED=$(echo "$MATRIX" | jq -c '
-            to_entries
-            | map(select(.value.testing_enabled == true))
-            | from_entries
-          ')
-
-          echo "test_matrix=$FILTERED" >> "$GITHUB_OUTPUT"
-          echo "Filtered matrix: $FILTERED"          # prints to console (job log) 
+            MATRIX='${{ needs.load_parameters.outputs.build_matrix }}'
+        
+            echo "RAW build_matrix:"
+            echo "$MATRIX"
+        
+            echo "Validating JSON..."
+            echo "$MATRIX" | jq . >/dev/null
+        
+            # Supports:
+            # 1) object keyed by name: { "name": {Testing_enabled:true}, ... }
+            # 2) array of entries: [ {Testing_enabled:true,...}, ... ]  (will convert to include list)
+            FILTERED=$(
+              echo "$MATRIX" | jq -c '
+                if type == "object" then
+                  to_entries
+                  | map(select(.value.Testing_enabled == true))
+                  | from_entries
+                elif type == "array" then
+                  {include: map(select(.Testing_enabled == true))}
+                else
+                  error("Unsupported build_matrix JSON type: " + (type|tostring))
+                end
+              '
+            )
+        
+            echo "Filtered matrix (pretty):"
+            echo "$FILTERED" | jq .
+        
+            echo "test_matrix=$FILTERED" >> "$GITHUB_OUTPUT"
           
   trigger_lava:
-    needs: [ load_parameters, build, process_image ]
+    needs: [ load_parameters, build, process_image, filter_test_matrix ]
     uses: Audioreach/audioreach-workflows/.github/workflows/test.yml@PR
     secrets: inherit
     with:
