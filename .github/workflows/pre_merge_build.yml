@@ -58,16 +58,16 @@ jobs:
             echo "$MATRIX" | jq . >/dev/null
         
             # Supports:
-            # 1) object keyed by name: { "name": {Testing_enabled:true}, ... }
+            # 1) object keyed by name: { "name": {testing_enabled:true}, ... }
             # 2) array of entries: [ {Testing_enabled:true,...}, ... ]  (will convert to include list)
             FILTERED=$(
               echo "$MATRIX" | jq -c '
                 if type == "object" then
                   to_entries
-                  | map(select(.value.Testing_enabled == true))
+                  | map(select(.value.testing_enabled == true))
                   | from_entries
                 elif type == "array" then
-                  {include: map(select(.Testing_enabled == true))}
+                  {include: map(select(.testing_enabled == true))}
                 else
                   error("Unsupported build_matrix JSON type: " + (type|tostring))
                 end
