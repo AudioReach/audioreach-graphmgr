@@ -81,7 +81,7 @@ static void sigint_handler(int sig)
     capturing = 0;
 }
 
-static void usage(void)
+static void usage(char *progname)
 {
     printf(" Usage: %s file.wav [-help print usage] [-D card] [-d device]\n"
            " [-c channels] [-r rate] [-b bits] [-p period_size]\n"
@@ -92,7 +92,7 @@ static void usage(void)
            " [-is_24_LE] : [0-1] Only to be used if user wants to record 32 bps clip\n"
            " [-usb_d usb device]\n"
            " 0: If bps is 32, and format should be S32_LE\n"
-           " 1: If bps is 24, and format should be S24_LE\n");
+           " 1: If bps is 24, and format should be S24_LE\n", progname);
 }
 
 int main(int argc, char **argv)
@@ -120,7 +120,7 @@ int main(int argc, char **argv)
     bool is_24_LE = false;
 
     if (argc < 2) {
-        usage();
+        usage(argv[0]);
         return 1;
     }
 
@@ -194,7 +194,7 @@ int main(int argc, char **argv)
             if (*argv)
                 usb_device = atoi(*argv);
         }else if (strcmp(*argv, "-help") == 0) {
-            usage();
+            usage(argv[0]);
         }
         if (*argv)
             argv++;
@@ -359,8 +359,8 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
     if (ret) {
         printf("MFC not present for this graph\n");
     } else {
-        if (configure_mfc(mixer, device, intf_name, TAG_STREAM_MFC,
-                     STREAM_PCM, rate, channels, get_tinyalsa_pcm_bit_width(format), miid)) {
+        if (configure_mfc(mixer, device, STREAM_PCM, rate, channels, 
+                          get_tinyalsa_pcm_bit_width(format), miid)) {
             printf("Failed to configure stream mfc\n");
             goto err_close_mixer;
         }
