@@ -1,6 +1,6 @@
 ---
 name: pre_merge_build
-run-name: Pre Merge Build (PR:${{ github.event.pull_request.number }})
+run-name: ${{ github.event.pull_request.number && 'Pre Merge Build PR:' || 'Pre Merge Build:' }}${{ github.event.pull_request.number || github.run_number }}
 
 on:
   workflow_dispatch:
@@ -39,7 +39,7 @@ jobs:
       build_matrix: ${{ needs.load_parameters.outputs.build_matrix }}
       pr_ref: ${{ github.event.pull_request.head.ref }}
       pr_repo: ${{ github.event.pull_request.head.repo.full_name }}
-      
+
   filter_test_matrix:
     needs: load_parameters
     runs-on: ubuntu-latest
@@ -50,13 +50,13 @@ jobs:
         shell: bash
         run: |
             MATRIX='${{ needs.load_parameters.outputs.build_matrix }}'
-        
+
             echo "RAW build_matrix:"
             echo "$MATRIX"
-        
+
             echo "Validating JSON..."
             echo "$MATRIX" | jq . >/dev/null
-        
+
             # Supports:
             # 1) object keyed by name: { "name": {testing_enabled:true}, ... }
             # 2) array of entries: [ {Testing_enabled:true,...}, ... ]  (will convert to include list)
@@ -73,12 +73,12 @@ jobs:
                 end
               '
             )
-        
+
             echo "Filtered matrix (pretty):"
             echo "$FILTERED" | jq .
-        
+
             echo "test_matrix=$FILTERED" >> "$GITHUB_OUTPUT"
-          
+
   trigger_lava:
     needs: [ process_image, filter_test_matrix ]
     uses: Audioreach/audioreach-workflows/.github/workflows/test.yml@master

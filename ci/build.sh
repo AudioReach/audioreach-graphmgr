@@ -3,6 +3,19 @@
 #
 # Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
 set -ex
+
+PREBUILD_SCRIPT_PATH="${PREBUILD_SCRIPT:-$(dirname "${BASH_SOURCE[0]}")/pre_build.sh}"
+source "$PREBUILD_SCRIPT_PATH"
+
+KERNEL_VERSION="$(basename "$(find "${GITHUB_WORKSPACE}/install/sysroots/armv8-2a-poky-linux/usr/lib/modules" -mindepth 1 -maxdepth 1 -type d)")"
+
+# load build args from file if environment variable is not set
+if [ -z "${BUILD_ARGS}" ]; then
+    BUILD_OPTIONS_FILE="${GITHUB_WORKSPACE}/ci/build_options.txt"
+    BUILD_ARGS="$(sed -E 's/#.*$//' "$BUILD_OPTIONS_FILE" | sed '/^[[:space:]]*$/d' | tr '\n' ' ')"
+fi
+
+
 echo "Running build script..."
 # Build/Compile audioreach-graphmgr
 source ${GITHUB_WORKSPACE}/install/environment-setup-armv8-2a-qcom-linux
