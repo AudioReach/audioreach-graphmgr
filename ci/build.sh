@@ -5,7 +5,7 @@
 set -ex
 echo "Running build script..."
 # Build/Compile audioreach-graphmgr
-source ${GITHUB_WORKSPACE}/install/environment-setup-armv8-2a-qcom-linux
+source ${GITHUB_WORKSPACE}/install/environment-setup-cortexa7t2hf-neon-vfpv4-raspberrypi4-linux
 # make sure we are in the right directory
 cd ${GITHUB_WORKSPACE}
 
