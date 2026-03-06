@@ -5,7 +5,7 @@
 set -ex
 echo "Running build script..."
 # Build/Compile audioreach-graphmgr
-source ${GITHUB_WORKSPACE}/install/environment-setup-cortexa7t2hf-neon-vfpv4-raspberrypi4-linux
+source ${GITHUB_WORKSPACE}/install/environment-setup-cortexa7t2hf-neon-vfpv4-poky-linux-gnueabi
 # make sure we are in the right directory
 cd ${GITHUB_WORKSPACE}
 
