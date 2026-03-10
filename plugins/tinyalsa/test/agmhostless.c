@@ -303,9 +303,8 @@ void play_loopback(unsigned int card, unsigned int p_device, unsigned int c_devi
     if (ret) {
         printf("MFC not present for this graph\n");
     } else {
-        if (configure_mfc(mixer, p_device, p_intf_name, PER_STREAM_PER_DEVICE_MFC,
-                           STREAM_PCM, p_config->rate, p_config->ch,
-                           p_config->bits, miid)) {
+        if (configure_mfc(mixer, p_device, STREAM_PCM, p_config->rate, 
+            p_config->ch, p_config->bits, miid)) {
             printf("Failed to configure pspd mfc\n");
             goto err_disconnect;
         }
