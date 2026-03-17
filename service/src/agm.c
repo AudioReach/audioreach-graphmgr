@@ -111,6 +111,7 @@ int agm_init()
 
 #endif
 
+    
 #ifdef DYNAMIC_LOG_ENABLED
     register_for_dynamic_logging("agm");
     log_utils_init();
