@@ -1,8 +1,10 @@
 project: https://github.com/AudioReach/audioreach-graphmgr
 
 branches:
-  master:
+  abi:
     modes:
       blocking:
         headers:
           - service/inc/public/agm/agm_api.h
+abi_checks:
+  - path: build/usr/lib/libagm.so
