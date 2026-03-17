@@ -89,6 +89,7 @@ int agm_init()
     pthread_attr_t tattr;
     struct sched_param param;
 
+    
 #ifdef ARE_ON_APPS
     posal_init();
     ret = gpr_init();
