@@ -527,9 +527,8 @@ void play_samples(char *name, unsigned int card, unsigned int device, unsigned i
         if (ret) {
             printf("MFC not present for this graph\n");
         } else {
-            if (configure_mfc(mixer, device, intf_name[index], PER_STREAM_PER_DEVICE_MFC,
-                           STREAM_COMPRESS, dev_config[index].rate, dev_config[index].ch,
-                           dev_config[index].bits, miid)) {
+            if (configure_mfc(mixer, device, STREAM_COMPRESS, dev_config[index].rate, 
+                dev_config[index].ch, dev_config[index].bits, miid)) {
                 printf("Failed to configure pspd mfc\n");
                 goto MIXER_EXIT;
             }

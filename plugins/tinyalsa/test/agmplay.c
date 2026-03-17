@@ -84,7 +84,7 @@ void stream_close(int sig)
     close = 1;
 }
 
-static void usage(void)
+static void usage(char *progname)
 {
     printf(" Usage: %s file.wav [-help print usage] [-D card] [-d device]\n"
            " [-c channels] [-r rate] [-b bits]\n"
@@ -97,7 +97,7 @@ static void usage(void)
            " [is_24_LE] : [0-1] Only to be used if user wants to play S24_LE clip\n"
            " [-usb_d usb device]\n"
            " 0: If clip bps is 32, and format is S32_LE\n"
-           " 1: If clip bps is 24, and format is S24_LE\n");
+           " 1: If clip bps is 24, and format is S24_LE\n", progname);
 }
 
 int main(int argc, char **argv)
@@ -130,7 +130,7 @@ int main(int argc, char **argv)
     }
 
     if (argc < 3) {
-        usage();
+        usage(argv[0]);
         return 1;
     }
 
@@ -261,7 +261,7 @@ int main(int argc, char **argv)
             if (*argv)
                 usb_device = atoi(*argv);
         } else if (strcmp(*argv, "-help") == 0) {
-            usage();
+            usage(argv[0]);
         }
         if (*argv)
             argv++;
@@ -440,9 +440,8 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
         if (ret) {
             printf("PCM Converter not present for this graph\n");
         } else {
-            if (configure_pcm_converter(mixer, device, intf_name[index], STREAM_PCM_CONVERTER,
-                                STREAM_PCM, fmt.sample_rate, fmt.num_channels,
-                                fmt.bits_per_sample)) {
+            if (configure_pcm_converter(mixer, device, STREAM_PCM, 
+                                        fmt.num_channels, fmt.bits_per_sample, miid)) {
                 printf("Failed to configure pcm converter\n");
                 goto err_close_mixer;
             }
@@ -452,9 +451,8 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
         if (ret) {
             printf("MFC not present for this graph\n");
         } else {
-            if (configure_mfc(mixer, device, intf_name[index], PER_STREAM_PER_DEVICE_MFC,
-                           STREAM_PCM, dev_config[index].rate, dev_config[index].ch,
-                           dev_config[index].bits, miid)) {
+            if (configure_mfc(mixer, device, STREAM_PCM, dev_config[index].rate, 
+                dev_config[index].ch, dev_config[index].bits, miid)) {
                 printf("Failed to configure pspd mfc\n");
                 goto err_close_mixer;
             }
