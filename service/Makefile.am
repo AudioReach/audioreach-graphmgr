@@ -55,4 +55,4 @@ libagm_la_CFLAGS += -DARE_ON_APPS
 endif
 
 libagm_la_CFLAGS += -D__unused=__attribute__\(\(__unused__\)\)
-libagm_la_LDFLAGS += -module -shared -avoid-version
+libagm_la_LDFLAGS += -module -shared -version-number @LT_VERSION_NUMBER@
