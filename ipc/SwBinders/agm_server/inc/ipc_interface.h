@@ -151,6 +151,11 @@ class IAgmService: public ::android::IInterface
                                     uint32_t silence) = 0;
         virtual int ipc_agm_session_get_buf_info(uint32_t session_id,
                            struct agm_buf_info *buf_info, uint32_t flag) = 0;
+        virtual int ipc_agm_cshm_alloc(int32_t size,
+            const AgmCshmInfo &in_info, AgmCshmInfo *_aidl_return) = 0;
+        virtual int ipc_agm_cshm_msg(int32_t in_mem_id, int32_t in_offset,
+            int32_t in_length, int32_t in_miid, int32_t in_prop_flag) = 0;
+        virtual int ipc_agm_cshm_dealloc(int32_t mem_id) = 0;
 };
 
 class BnAgmService : public ::android::BnInterface<IAgmService> {
