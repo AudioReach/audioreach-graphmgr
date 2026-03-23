@@ -6,3 +6,5 @@ branches:
       blocking:
         headers:
           - service/inc/public/agm/agm_api.h
+abi_checks:
+  - path: build/usr/lib/libagm.so
