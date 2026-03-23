@@ -9,6 +9,7 @@ source "$PREBUILD_SCRIPT_PATH"
 
 
 
+
 # load build args from file if environment variable is not set
 if [ -z "${BUILD_ARGS:-}" ]; then
     BUILD_OPTIONS_FILE="${GITHUB_WORKSPACE}/ci/build_options.txt"
