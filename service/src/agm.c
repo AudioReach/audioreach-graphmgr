@@ -55,6 +55,7 @@
 #include "posal.h"
 #include "spf_main.h"
 #endif
+#include "gsl_intf.h"
 
 #define RETRY_INTERVAL_US 500 * 1000
 static bool agm_initialized = 0;
