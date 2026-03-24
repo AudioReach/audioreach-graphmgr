@@ -351,8 +351,8 @@ static void capture_samples(char *name, unsigned int card, unsigned int device,
     if (ret) {
         printf("MFC not present for this graph");
     } else {
-        if (configure_mfc(mixer, device, intf_name, TAG_STREAM_MFC,
-                     STREAM_COMPRESS, rate, channels, pcm_format_to_bits(format), miid)) {
+        if (configure_mfc(mixer, device, STREAM_COMPRESS, rate, channels, 
+            pcm_format_to_bits(format), miid)) {
             printf("Failed to configure pspd mfc\n");
             goto mixer_exit;
         }
