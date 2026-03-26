@@ -2170,6 +2170,19 @@ int agm_get_group_aif_info_list(struct aif_info *aif_list, size_t *num_groups){
     return 0;
 }
 
+int agm_cshm_alloc(uint32_t size, agm_cshm_info *info) {
+    return 0;
+}
+
+int agm_cshm_msg(uint32_t mem_id, uint32_t offset, uint32_t length,
+                    uint32_t miid, uint32_t prop_flag) {
+    return 0;
+}
+
+int agm_cshm_dealloc(uint32_t mem_id)  {
+    return 0;
+}
+
 int agm_init() {
     GError *error = NULL;
     int rc = 0;

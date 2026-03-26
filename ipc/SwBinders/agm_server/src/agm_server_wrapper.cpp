@@ -285,3 +285,23 @@ int AgmService::ipc_agm_session_get_buf_info(uint32_t session_id,
     ALOGV("%s called\n", __func__);
     return agm_session_get_buf_info(session_id, buf_info, flag);
 };
+
+int AgmService::ipc_agm_session_get_buf_info(uint32_t session_id,
+                       struct agm_buf_info *buf_info, uint32_t flag) {
+    ALOGV("%s called\n", __func__);
+    return agm_session_get_buf_info(session_id, buf_info, flag);
+};
+
+int AgmService::ipc_agm_cshm_alloc(
+                int32_t size, const AgmCshmInfo &in_info, AgmCshmInfo *_aidl_return) {
+    return 0;
+}
+int AgmService::ipc_agm_cshm_msg(int32_t in_mem_id, int32_t in_offset,
+            int32_t in_length, int32_t in_miid, int32_t in_prop_flag) {
+
+    return 0;
+}
+
+int AgmService::ipc_agm_cshm_dealloc(int32_t mem_id) {
+    return 0;
+}
