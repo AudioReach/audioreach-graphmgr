@@ -2509,6 +2509,19 @@ static void ipc_agm_session_open(DBusConnection *conn,
     AGM_LOGD("%s :Exit ", __func__);
     return;
 }
+static void ipc_agm_cshm_alloc(
+                int32_t size, const agm_cshm_info &in_info, agm_cshm_info *_aidl_return) {
+    return;
+}
+static void ipc_agm_cshm_msg(int32_t in_mem_id, int32_t in_offset,
+            int32_t in_length, int32_t in_miid, int32_t in_prop_flag) {
+    return;
+}
+
+static void ipc_agm_cshm_dealloc(int32_t mem_id) {
+    return;
+}
+
 
 /* Initialize module data. Get dbus connection and register module interface
     with the connection */

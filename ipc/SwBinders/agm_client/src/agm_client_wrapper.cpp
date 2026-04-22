@@ -516,3 +516,16 @@ int agm_session_get_buf_info(uint32_t session_id, struct agm_buf_info *buf_info,
     ALOGE("%s: agm service is not running\n", __func__);
     return -EAGAIN;
 }
+
+int agm_cshm_alloc(uint32_t size, agm_cshm_info *info) {
+    return -EAGAIN;
+}
+
+int agm_cshm_msg(uint32_t mem_id, uint32_t offset, uint32_t length,
+                    uint32_t miid, uint32_t prop_flag) {
+    return -EAGAIN;
+}
+
+int agm_cshm_dealloc(uint32_t mem_id)  {
+    return -EAGAIN;
+}
