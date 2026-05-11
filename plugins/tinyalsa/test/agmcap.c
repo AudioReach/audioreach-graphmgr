@@ -80,9 +80,9 @@ static void sigint_handler(int sig)
     capturing = 0;
 }
 
-static void usage(void)
+static void usage(const char *progname)
 {
-    printf(" Usage: file.wav in /data [-help print usage] [-D card] [-d device]\n"
+    printf(" Usage: %s file.wav in /data [-help print usage] [-D card] [-d device]\n"
            " [-c channels] [-r rate] [-b bits] [-p period_size]\n"
            " [-n n_periods] [-T capture time] [-i intf_name] [-dkv device_kv]\n"
            " [-dppkv deviceppkv] : Assign 0 if no device pp in the graph\n"
@@ -91,13 +91,14 @@ static void usage(void)
            " [-is_24_LE] : [0-1] Only to be used if user wants to record 32 bps clip\n"
            " [-usb_d usb device]\n"
            " 0: If bps is 32, and format should be S32_LE\n"
-           " 1: If bps is 24, and format should be S24_LE\n");
+           " 1: If bps is 24, and format should be S24_LE\n", progname);
 }
 
 int main(int argc, char **argv)
 {
     FILE *file;
     struct wav_header header;
+    const char *progname = argv[0];
     unsigned int card = 100;
     unsigned int device = 101;
     unsigned int usb_device = 1;
@@ -120,7 +121,7 @@ int main(int argc, char **argv)
     bool is_24_LE = false;
 
     if (argc < 2) {
-        usage();
+        usage(progname);
         return 1;
     }
 
@@ -208,7 +209,7 @@ int main(int argc, char **argv)
             if (*argv)
                 usb_device = atoi(*argv);
         }else if (strcmp(*argv, "-help") == 0) {
-            usage();
+            usage(progname);
         }
         if (*argv)
             argv++;
