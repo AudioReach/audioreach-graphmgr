@@ -1156,7 +1156,8 @@ int configure_mfc(struct mixer *mixer, int device, enum stream_type stype, unsig
     size = payloadSize + padBytes;
 
     ret = agm_mixer_set_param(mixer, device, stype, (void *)payloadInfo, (int)size);
-    free(payloadInfo);
+    if (payloadInfo)
+        free(payloadInfo);
 
     return ret;
 }
