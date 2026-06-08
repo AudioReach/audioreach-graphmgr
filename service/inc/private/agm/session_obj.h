@@ -103,6 +103,7 @@ struct session_obj {
     size_t bytes_written;
     pthread_mutex_t lock;
     pthread_mutex_t cb_pool_lock;
+    struct agm_buf_info extern_buf_info;
 };
 
 struct session_pool {
