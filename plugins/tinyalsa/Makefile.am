@@ -30,19 +30,19 @@ libagm_pcm_plugin_la_LDFLAGS += -L$(top_builddir)/ipc/DBus/agm_client/.libs
 libagm_pcm_plugin_la_LIBADD += -lagmclient
 endif
 
-#lib_LTLIBRARIES      += libtinycompress_module_agm.la
-#libtinycompress_module_agm_la_SOURCES = src/agm_compress_plugin.c
-#libtinycompress_module_agm_la_CFLAGS  = $(AM_CFLAGS)
-#libtinycompress_module_agm_la_LDFLAGS = -shared -version-number @LT_VERSION_NUMBER@ -L$(top_builddir)/snd_parser/.libs
-#libtinycompress_module_agm_la_LIBADD  = -ltinyalsa -ltinycompress -lpthread -lsndcardparser
-#if AGM_NO_IPC
-#libtinycompress_module_agm_la_CFLAGS += -DAGM_NO_IPC
-#libtinycompress_module_agm_la_LDFLAGS += -L$(top_builddir)/service/.libs
-#libtinycompress_module_agm_la_LIBADD += -lagm
-#else
-#libtinycompress_module_agm_la_LDFLAGS += -L$(top_builddir)/ipc/DBus/agm_client/.libs
-#libtinycompress_module_agm_la_LIBADD += -lagmclient
-#endif
+lib_LTLIBRARIES      += libtinycompress_module_agm.la
+libtinycompress_module_agm_la_SOURCES = src/agm_compress_plugin.c
+libtinycompress_module_agm_la_CFLAGS  = $(AM_CFLAGS)
+libtinycompress_module_agm_la_LDFLAGS = -shared -version-number @LT_VERSION_NUMBER@ -L$(top_builddir)/snd_parser/.libs
+libtinycompress_module_agm_la_LIBADD  = -ltinyalsa -ltinycompress -lpthread -lsndcardparser
+if AGM_NO_IPC
+libtinycompress_module_agm_la_CFLAGS += -DAGM_NO_IPC
+libtinycompress_module_agm_la_LDFLAGS += -L$(top_builddir)/service/.libs
+libtinycompress_module_agm_la_LIBADD += -lagm
+else
+libtinycompress_module_agm_la_LDFLAGS += -L$(top_builddir)/ipc/DBus/agm_client/.libs
+libtinycompress_module_agm_la_LIBADD += -lagmclient
+endif
 
 lib_LTLIBRARIES      += libagm_mixer_plugin.la
 libagm_mixer_plugin_la_SOURCES = src/agm_mixer_plugin.c
