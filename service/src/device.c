@@ -1097,7 +1097,7 @@ static int parse_virtual_snd_card()
 
     for (i = 0; i < num_nodes; i++) {
         void *node = node_list[i];
-        uint32_t is_backend = 1;
+        uint32_t is_backend = 0;
         char *name = NULL, *so_name = NULL;
 
         snd_card_def_get_int(node, "backend", &is_backend);
