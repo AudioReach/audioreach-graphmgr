@@ -111,8 +111,6 @@ struct agm_pcm_priv {
     struct agm_mmap_buffer_port mmap_buffer_port[2];
     bool mmap_status;
     uint32_t mmap_buf_tout;
-    bool pcm_metadata_mode; /* For HIST_CAP usecase, both metadata and PCM data will be written
-                             * into mmap shared memory, hence period floor is skipped. */
 };
 
 struct pcm_plugin_hw_constraints agm_pcm_constrs = {
@@ -335,8 +333,7 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
 
     if (ret == 0) {
         circ_buf_pos = agm_pcm_bytes_to_frames(read_index, priv->media_config);
-        pos = priv->pcm_metadata_mode ? circ_buf_pos :
-              (circ_buf_pos / period_size) * period_size;
+        pos = (circ_buf_pos / period_size) * period_size;
         old_hw_ptr = agm_pcm_plugin_get_hw_ptr(priv);
         hw_base = priv->pos_buf->hw_ptr_base;
 
@@ -918,8 +915,6 @@ static int agm_pcm_ioctl(struct pcm_plugin *plugin, int cmd, void *arg)
 
     switch (cmd) {
     case SNDRV_PCM_IOCTL_RESET:
-        if (arg)
-            priv->pcm_metadata_mode = *(bool *)arg;
         ret = agm_pcm_plugin_reset(plugin);
         break;
     default:
