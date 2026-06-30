@@ -212,9 +212,18 @@ static void get_default_channel_map(uint8_t *channel_map, int channels)
          channel_map[30] = PCM_CHANNEL_LW;
          channel_map[31] = PCM_CHANNEL_RW;
          break;
+    case CHANNEL_63:
+        get_default_channel_map(channel_map, CHANNELS_32);
+        channel_map[32] = PCM_CHANNEL_LSD;
+        channel_map[33] = PCM_CHANNEL_RSD;
+        for (i = 34; i < 47; i++)
+            channel_map[i] = PCM_CUSTOM_CHANNEL_MAP_17 + (i - 34);
+        for (i = 47; i < CHANNEL_63; i++)
+            channel_map[i] = PCM_CUSTOM_CHANNEL_MAP_1 + (i - 47);
+        break;
     case CHANNEL_64:
         /* Reuse smaller default maps to avoid duplicating overlapping entries. */
-        get_default_channel_map(channel_map, CHANNEL_32);
+        get_default_channel_map(channel_map, CHANNELS_32);
         channel_map[32] = PCM_CHANNEL_LSD;
         channel_map[33] = PCM_CHANNEL_RSD;
         for (i = 34; i < CHANNEL_64; i++)
