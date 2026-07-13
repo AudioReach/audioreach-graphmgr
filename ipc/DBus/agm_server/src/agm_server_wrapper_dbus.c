@@ -659,8 +659,6 @@ static void ipc_agm_session_deregister_cb(DBusConnection *conn,
 
     if (userdata == NULL) {
         AGM_LOGE("Invalid userdata");
-        agm_dbus_send_error(mdata->conn,
-                            msg, DBUS_ERROR_FAILED, "userdata is NULL");
         return;
     }
 
@@ -748,8 +746,6 @@ static void ipc_agm_session_register_cb(DBusConnection *conn,
 
     if (userdata == NULL) {
         AGM_LOGE("Invalid userdata");
-        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
-                            "userdata is NULL");
         return;
     }
 
@@ -1010,6 +1006,13 @@ static void ipc_agm_session_get_buf_info(DBusConnection *conn,
     //dbus_message_iter_next(&arg_i);
     buf_info = (struct agm_buf_info *) calloc(1,(sizeof(struct agm_buf_info)));
 
+    if (buf_info == NULL) {
+        AGM_LOGE("buf_info is NULL");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
+                            "alloc memory failed, buf_info is NULL.");
+        return;
+    }
+
     if (agm_session_get_buf_info(session_id, buf_info, flag) != 0) {
         AGM_LOGE("agm_session_get_buf_info failed.");
         agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
@@ -1213,6 +1216,13 @@ static void ipc_agm_aif_set_params(DBusConnection *conn,
     dbus_message_iter_recurse(&arg_i, &array_i);
     dbus_message_iter_get_fixed_array(&array_i, addr_value, &n_elements);
     buf = (void *)malloc(n_elements*sizeof(char));
+
+    if (buf == NULL) {
+        AGM_LOGE("buf is NULL");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,"alloc memory failed, buf is NULL.");
+        return;
+    }
+
     memcpy(buf, value, n_elements);
 
     if (agm_aif_set_params(aif_id, buf, size) != 0) {
@@ -1489,6 +1499,13 @@ static void ipc_agm_session_set_params(DBusConnection *conn,
     dbus_message_iter_recurse(&arg_i, &array_i);
     dbus_message_iter_get_fixed_array(&array_i, addr_value, &n_elements);
     payload = (void *)malloc(n_elements*sizeof(char));
+
+    if (payload == NULL) {
+        AGM_LOGE("payload is NULL");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,"alloc memory failed, payload is NULL.");
+        return;
+    }
+
     memcpy(payload, value, n_elements);
 
     if (agm_session_set_params(session_id, (void *)payload, size) != 0) {
@@ -1613,8 +1630,6 @@ static void ipc_agm_set_params_with_tag(DBusConnection *conn,
 
     if (userdata == NULL) {
         AGM_LOGE("Invalid userdata");
-        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
-                            "userdata is NULL");
         return;
     }
 
@@ -2570,8 +2585,6 @@ static void ipc_agm_session_open(DBusConnection *conn,
 
     if (userdata == NULL) {
         AGM_LOGE("Invalid userdata");
-        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
-                            "userdata is NULL");
         return;
     }
 
@@ -2708,6 +2721,12 @@ int ipc_agm_init() {
 
     mdata->conn = agm_dbus_new_connection();
 
+    if (mdata->conn == NULL) {
+        AGM_LOGE("Failed to request name on bus: %s", err.message);
+        rc = -EINVAL;
+        goto fail;
+    }
+
     dbus_error_init(&err);
     rc = dbus_bus_request_name(mdata->conn->conn,
                                AGM_DBUS_CONNECTION,
@@ -2716,24 +2735,14 @@ int ipc_agm_init() {
 
     if (rc != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
         AGM_LOGE("Failed to request name on bus: %s", err.message);
-        agm_dbus_connection_free(mdata->conn);
-        free(mdata->dbus_obj_path);
-        mdata->dbus_obj_path = NULL;
-        free(mdata);
-        mdata = NULL;
         rc = -EINVAL;
-        return rc;
+        goto fail;
     }
 
     if (agm_setup_dbus_with_main_loop(mdata->conn)) {
         AGM_LOGE("Failed to setup main loop");
-        agm_dbus_connection_free(mdata->conn);
-        free(mdata->dbus_obj_path);
-        mdata->dbus_obj_path = NULL;
-        free(mdata);
-        mdata = NULL;
         rc = -EINVAL;
-        return rc;
+        goto fail;
     }
 
     if ((rc = agm_dbus_add_interface(mdata->conn,
@@ -2741,13 +2750,8 @@ int ipc_agm_init() {
                                      &module_interface_info,
                                      mdata)) != 0) {
         AGM_LOGE("Failed to add interface");
-        agm_dbus_connection_free(mdata->conn);
-        free(mdata->dbus_obj_path);
-        mdata->dbus_obj_path = NULL;
-        free(mdata);
-        mdata = NULL;
         rc = -EINVAL;
-        return rc;
+        goto fail;
     }
 
     mdata->sessions = g_hash_table_new_full(g_direct_hash,
@@ -2757,15 +2761,17 @@ int ipc_agm_init() {
 
     if ((rc = agm_init()) != 0) {
         AGM_LOGE("agm initialization failed");
-        agm_dbus_connection_free(mdata->conn);
-        free(mdata->dbus_obj_path);
-        mdata->dbus_obj_path = NULL;
-        free(mdata);
-        mdata = NULL;
-        return rc;
+        goto fail;
     }
 
     dbus_error_free(&err);
+    return rc;
+fail:
+    agm_dbus_connection_free(mdata->conn);
+    free(mdata->dbus_obj_path);
+    mdata->dbus_obj_path = NULL;
+    free(mdata);
+    mdata = NULL;
     return rc;
 }
 
