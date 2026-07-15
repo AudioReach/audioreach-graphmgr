@@ -42,6 +42,7 @@
 #include <strings.h>
 #include <string.h>
 #include <stdio.h>
+#include <pthread.h>
 #include <unistd.h>
 #include <tinyalsa/plugin.h>
 #include <snd-card-def.h>
@@ -106,6 +107,8 @@ struct agm_pcm_priv {
     /* idx: 0: out port, 1: in port */
     struct agm_mmap_buffer_port mmap_buffer_port[2];
     bool mmap_status;
+    bool shutting_down;
+    pthread_mutex_t state_lock;
     uint32_t mmap_buf_tout;
 };
 
@@ -692,6 +695,10 @@ static int agm_pcm_close(struct pcm_plugin *plugin)
     if (ret)
         return ret;
 
+    pthread_mutex_lock(&priv->state_lock);
+    priv->shutting_down = true;
+    pthread_mutex_unlock(&priv->state_lock);
+
     ret = agm_session_close(handle);
     errno = ret;
 
@@ -701,18 +708,20 @@ static int agm_pcm_close(struct pcm_plugin *plugin)
     free(priv->session_config);
     // unmap memory in case agm_pcm_munmap not called before close
     if (priv->mmap_status) {
-        if (plugin->mode & PCM_NOIRQ) {
-            if (priv->pos_buf) {
-                munmap(priv->pos_buf->pos_buf_addr,
-                        priv->buf_info->pos_buf_size);
-                free(priv->pos_buf);
-                priv->pos_buf = NULL;
-            }
+        pthread_mutex_lock(&priv->state_lock);
+        if (plugin->mode & PCM_NOIRQ && priv->pos_buf) {
+            munmap(priv->pos_buf->pos_buf_addr,
+                    priv->buf_info->pos_buf_size);
+            free(priv->pos_buf);
+            priv->pos_buf = NULL;
         }
+        pthread_mutex_unlock(&priv->state_lock);
         dir = (plugin->mode & PCM_IN) ? TX : RX;
         munmap(priv->mmap_buffer_port[dir-1].mmap_buffer_addr,
             priv->mmap_buffer_port[dir-1].mmap_buffer_length);
+        pthread_mutex_lock(&priv->state_lock);
         priv->mmap_status = false;
+        pthread_mutex_unlock(&priv->state_lock);
     }
     if (priv->buf_info) {
         if (priv->buf_info->data_buf_fd != -1)
@@ -732,6 +741,9 @@ static snd_pcm_sframes_t agm_pcm_get_avail(struct pcm_plugin *plugin)
     struct agm_pcm_priv *priv = plugin->priv;
     snd_pcm_sframes_t avail = 0;
     enum direction dir;
+
+    if (!priv || !priv->pos_buf)
+        return 0;
 
     dir = (plugin->mode & PCM_IN) ? TX : RX;
 
@@ -769,19 +781,47 @@ static int agm_pcm_poll(struct pcm_plugin *plugin, struct pollfd *pfd,
     int ret = 0;
     uint32_t period_to_msec = period_size / (priv->media_config->rate / 1000);
 
+    /* Non-NOIRQ path never uses pos_buf; exit before NOIRQ-only logic. */
+    if (!(plugin->mode & PCM_NOIRQ)) {
+        if (timeout > 0)
+            usleep(timeout * 1000);
+        if (plugin->mode & PCM_IN) {
+            pfd->revents = POLLIN | POLLOUT;
+            return POLLIN;
+        }
+        pfd->revents = POLLOUT;
+        return POLLOUT;
+    }
+
+    pthread_mutex_lock(&priv->state_lock);
+    if (priv->shutting_down || !priv->mmap_status || !priv->pos_buf) {
+        pthread_mutex_unlock(&priv->state_lock);
+        pfd->revents = POLLERR;
+        errno = ENODEV;
+        return -ENODEV;
+    }
     avail = agm_pcm_get_avail(plugin);
 
-    if(priv->mmap_buf_tout &&
+    if (priv->mmap_buf_tout &&
        priv->pos_buf->last_app_ptr != priv->pos_buf->appl_ptr)
         priv->mmap_buf_tout = 0;
+    pthread_mutex_unlock(&priv->state_lock);
 
     if (avail < period_size) {
         if (timeout == 0) //wait for 1msec
             timeout = 1;
         usleep(timeout * 1000);
+        pthread_mutex_lock(&priv->state_lock);
+        if (priv->shutting_down || !priv->mmap_status || !priv->pos_buf) {
+            pthread_mutex_unlock(&priv->state_lock);
+            pfd->revents = POLLERR;
+            errno = ENODEV;
+            return -ENODEV;
+        }
         ret = agm_pcm_plugin_update_hw_ptr(priv);
         if (ret == 0)
             avail = agm_pcm_get_avail(plugin);
+        pthread_mutex_unlock(&priv->state_lock);
     }
 
     if (avail >= period_size) {
@@ -796,7 +836,10 @@ static int agm_pcm_poll(struct pcm_plugin *plugin, struct pollfd *pfd,
     } else {
         ret = 0; /* TIMEOUT */
         priv->mmap_buf_tout += timeout;
-        priv->pos_buf->last_app_ptr = priv->pos_buf->appl_ptr;
+        pthread_mutex_lock(&priv->state_lock);
+        if (priv->pos_buf)
+            priv->pos_buf->last_app_ptr = priv->pos_buf->appl_ptr;
+        pthread_mutex_unlock(&priv->state_lock);
         if (priv->mmap_buf_tout > (period_to_msec * MMAP_TOUT_MULTI)) {
             AGM_LOGE("timeout in waiting for mmap buffer");
             priv->mmap_buf_tout = 0;
@@ -879,7 +922,10 @@ static void* agm_pcm_mmap(struct pcm_plugin *plugin, void *addr __unused, size_t
         priv->mmap_buffer_port[dir-1].mmap_buffer_addr = mmap_addr;
         priv->mmap_buffer_port[dir-1].mmap_buffer_length = length;
     }
+    pthread_mutex_lock(&priv->state_lock);
     priv->mmap_status = true;
+    priv->shutting_down = false;
+    pthread_mutex_unlock(&priv->state_lock);
     return mmap_addr;
 }
 
@@ -887,6 +933,7 @@ static int agm_pcm_munmap(struct pcm_plugin *plugin, void *addr, size_t length)
 {
     struct agm_pcm_priv *priv = plugin->priv;
 
+    pthread_mutex_lock(&priv->state_lock);
     priv->mmap_status = false;
     if (plugin->mode & PCM_NOIRQ) {
         if (priv->pos_buf) {
@@ -896,6 +943,7 @@ static int agm_pcm_munmap(struct pcm_plugin *plugin, void *addr, size_t length)
             priv->pos_buf = NULL;
         }
     }
+    pthread_mutex_unlock(&priv->state_lock);
     return munmap(addr, length);
 }
 
@@ -941,6 +989,11 @@ int agm_pcm_open(struct pcm_plugin **plugin, unsigned int card,
     if (!priv) {
         ret = -ENOMEM;
         goto err_plugin_free;
+    }
+    ret = pthread_mutex_init(&priv->state_lock, NULL);
+    if (ret) {
+        ret = -ret;
+        goto err_priv_free;
     }
 
     media_config = calloc(1, sizeof(struct agm_media_config));
@@ -1014,6 +1067,8 @@ err_buf_free:
 err_media_free:
     free(media_config);
 err_priv_free:
+    if (priv)
+        pthread_mutex_destroy(&priv->state_lock);
     free(priv);
 err_plugin_free:
     free(agm_pcm_plugin);
