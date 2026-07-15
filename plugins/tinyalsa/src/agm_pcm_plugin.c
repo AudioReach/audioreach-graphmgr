@@ -779,12 +779,20 @@ static int agm_pcm_poll(struct pcm_plugin *plugin, struct pollfd *pfd,
     uint32_t period_size = priv->period_size;
     snd_pcm_sframes_t avail;
     int ret = 0;
+    int sleep_ms = timeout;
     uint32_t period_to_msec = period_size / (priv->media_config->rate / 1000);
+
+    /*
+     * Tinyalsa uses timeout = -1 for infinite wait. Do not pass negative values
+     * to usleep(); use short polling intervals instead.
+     */
+    if (sleep_ms < 0)
+        sleep_ms = 1;
 
     /* Non-NOIRQ path never uses pos_buf; exit before NOIRQ-only logic. */
     if (!(plugin->mode & PCM_NOIRQ)) {
-        if (timeout > 0)
-            usleep(timeout * 1000);
+        if (sleep_ms > 0)
+            usleep(sleep_ms * 1000);
         if (plugin->mode & PCM_IN) {
             pfd->revents = POLLIN | POLLOUT;
             return POLLIN;
@@ -808,9 +816,9 @@ static int agm_pcm_poll(struct pcm_plugin *plugin, struct pollfd *pfd,
     pthread_mutex_unlock(&priv->state_lock);
 
     if (avail < period_size) {
-        if (timeout == 0) //wait for 1msec
-            timeout = 1;
-        usleep(timeout * 1000);
+        if (sleep_ms == 0) //wait for 1msec
+            sleep_ms = 1;
+        usleep(sleep_ms * 1000);
         pthread_mutex_lock(&priv->state_lock);
         if (priv->shutting_down || !priv->mmap_status || !priv->pos_buf) {
             pthread_mutex_unlock(&priv->state_lock);
@@ -835,7 +843,7 @@ static int agm_pcm_poll(struct pcm_plugin *plugin, struct pollfd *pfd,
         priv->mmap_buf_tout = 0;
     } else {
         ret = 0; /* TIMEOUT */
-        priv->mmap_buf_tout += timeout;
+        priv->mmap_buf_tout += sleep_ms;
         pthread_mutex_lock(&priv->state_lock);
         if (priv->pos_buf)
             priv->pos_buf->last_app_ptr = priv->pos_buf->appl_ptr;
