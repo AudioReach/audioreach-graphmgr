@@ -769,6 +769,24 @@ static int agm_pcm_poll(struct pcm_plugin *plugin, struct pollfd *pfd,
     int ret = 0;
     uint32_t period_to_msec = period_size / (priv->media_config->rate / 1000);
 
+    /* Non-NOIRQ path does not use pos_buf. */
+    if (!(plugin->mode & PCM_NOIRQ)) {
+        if (timeout > 0)
+            usleep(timeout * 1000);
+        if (plugin->mode & PCM_IN) {
+            pfd->revents = POLLIN | POLLOUT;
+            return POLLIN;
+        }
+        pfd->revents = POLLOUT;
+        return POLLOUT;
+    }
+
+    if (!priv->mmap_status || !priv->pos_buf) {
+        pfd->revents = POLLERR;
+        errno = ENODEV;
+        return -ENODEV;
+    }
+
     avail = agm_pcm_get_avail(plugin);
 
     if(priv->mmap_buf_tout &&
