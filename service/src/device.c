@@ -26,9 +26,9 @@
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
-** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
-** SPDX-License-Identifier: BSD-3-Clause-Clear
+** Changes from Qualcomm Technologies, Inc. are provided under the following license:
+** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+** SPDX-License-Identifier: BSD-3-Clause
 **/
 
 #define LOG_TAG "AGM: device"
@@ -1097,7 +1097,7 @@ static int parse_virtual_snd_card()
 
     for (i = 0; i < num_nodes; i++) {
         void *node = node_list[i];
-        uint32_t is_backend = 1;
+        uint32_t is_backend = 0;
         char *name = NULL, *so_name = NULL;
 
         snd_card_def_get_int(node, "backend", &is_backend);
