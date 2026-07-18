@@ -1459,7 +1459,7 @@ static void ipc_agm_get_aif_info_list(DBusConnection *conn,
     DBusMessageIter arg_i;
     DBusMessageIter r_arg, array_i, struct_i;
     agm_module_dbus_data *mdata = (agm_module_dbus_data *)userdata;
-    size_t num_aif_info;
+    size_t num_aif_info = 0;
     struct aif_info *aifinfo = NULL;
     char *name;
     int i = 0;
