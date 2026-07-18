@@ -718,10 +718,6 @@ static int agm_pcm_close(struct pcm_plugin *plugin)
         priv->mmap_status = false;
     }
     if (priv->buf_info) {
-        if (priv->buf_info->data_buf_fd != -1)
-            close(priv->buf_info->data_buf_fd);
-        if (priv->buf_info->pos_buf_fd != -1)
-            close(priv->buf_info->pos_buf_fd);
         free(priv->buf_info);
     }
     free(plugin->priv);
