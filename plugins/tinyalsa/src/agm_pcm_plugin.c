@@ -332,7 +332,7 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
 
     if (ret == 0) {
         circ_buf_pos = agm_pcm_bytes_to_frames(read_index, priv->media_config);
-        pos = (circ_buf_pos / period_size) * period_size;
+        pos = circ_buf_pos;
         old_hw_ptr = agm_pcm_plugin_get_hw_ptr(priv);
         hw_base = priv->pos_buf->hw_ptr_base;
 
