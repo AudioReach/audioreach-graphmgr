@@ -607,6 +607,45 @@ done:
     return result;
 }
 
+static void configure_qaif_aud_output_ep(hw_ep_info_t *hw_ep_info,
+                                         struct param_id_audio_if_intf_cfg_t *aud_config,
+                                         struct agm_media_config *media_config)
+{
+    if (hw_ep_info->dir != AUDIO_OUTPUT || aud_config->qaif_type != QAIF_AUD)
+        return;
+
+    switch (aud_config->intf_idx) {
+    case 0:
+        aud_config->intf_mode = AUDIO_IF_INTF_MODE_I2S;
+        aud_config->ctrl_data_out_enable = AUDIO_IF_CTRL_DATA_OE_ENABLE;
+        aud_config->active_slot_mask = CHANNEL_MASK(media_config->channels);
+        aud_config->nslots_per_frame = media_config->channels;
+        aud_config->slot_width = GET_BITS_PER_SAMPLE(media_config->format, 16);
+        aud_config->active_lane_mask = 1;
+        aud_config->frame_sync_rate = media_config->rate;
+        break;
+    case 2:
+        aud_config->intf_mode = AUDIO_IF_INTF_MODE_TDM;
+        aud_config->ctrl_data_out_enable = AUDIO_IF_CTRL_DATA_OE_ENABLE;
+        aud_config->active_slot_mask = 0x03;
+        aud_config->nslots_per_frame = 4;
+        aud_config->slot_width = 32;
+        aud_config->active_lane_mask = 2;
+        aud_config->frame_sync_rate = 0;
+        break;
+    default:
+        return;
+    }
+
+    aud_config->frame_sync_src = AUDIO_IF_FRAME_SYNC_SRC_INTERNAL;
+    aud_config->frame_sync_mode = AUDIO_IF_FRAME_SYNC_MODE_SHORT_SYNC;
+    aud_config->invert_frame_sync_pulse = AUDIO_IF_FRAME_SYNC_NORMAL;
+    aud_config->frame_sync_data_delay = AUDIO_IF_FRAME_SYNC_DATA_DELAY_1BCLK;
+    aud_config->bit_clk_type = AUDIO_IF_I_BIT_CLK_EN;
+    aud_config->inv_int_bit_clk = AUDIO_IF_INT_CLK_NORMAL;
+    aud_config->inv_ext_bit_clk = AUDIO_IF_EXT_CLK_NORMAL;
+}
+
 static int configure_aux_pcm_ep(struct module_info *mod,
                            struct graph_obj *graph_obj)
 {
@@ -764,8 +803,14 @@ static int configure_qaif_ep(struct module_info *mod,
     aud_config->qaif_type = hw_ep_info.ep_config.qaif_dma_config.qaif_type;
     aud_config->intf_idx = hw_ep_info.ep_config.qaif_dma_config.intf_idx;
 
-    AGM_LOGV("aud intf cfg qaif %d indx %d intf_mode %x",
-              aud_config->qaif_type, aud_config->intf_idx, aud_config->intf_mode);
+    configure_qaif_aud_output_ep(&hw_ep_info, aud_config, &media_config);
+
+    AGM_LOGV("aud intf cfg qaif %d indx %d intf_mode %x slot_mask %x",
+             aud_config->qaif_type, aud_config->intf_idx,
+             aud_config->intf_mode, aud_config->active_slot_mask);
+    AGM_LOGV("nslots %d slot_width %d lane_mask %x fs_rate %d",
+             aud_config->nslots_per_frame, aud_config->slot_width,
+             aud_config->active_lane_mask, aud_config->frame_sync_rate);
 
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_sz);
     if (ret != 0) {
