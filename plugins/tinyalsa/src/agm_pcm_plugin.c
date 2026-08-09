@@ -132,7 +132,7 @@ struct pcm_plugin_hw_constraints agm_pcm_constrs = {
         .max = 8,
     },
     .period_bytes = {
-        .min = 96,
+        .min = 16,
         .max = 122880,
     },
 };
