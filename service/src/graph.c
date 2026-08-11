@@ -2176,7 +2176,7 @@ int graph_get_tckv_data_from_acdb(
     uint32_t *ptr = NULL;
     size_t query_payload_size = *payload_size;
     struct apm_module_param_data_t *param = (apm_module_param_data_t *)payload;
-    uint8_t *param_list;
+    uint32_t *param_list;
 
     if (!payload) {
         return -EINVAL;
