@@ -1,0 +1,26 @@
+Source: audioreach-graphmgr
+Section: misc
+Priority: optional
+Maintainer: Radhika Garg <radhgarg@qti.qualcomm.com>
+Rules-Requires-Root: no
+Build-Depends: debhelper-compat (= 13),
+ libglib2.0-0,
+ libglib2.0-dev,
+ pkg-config,
+ audioreach-graphservice,
+ audioreach-conf,
+ libtinyalsa2,
+ libtinyalsa-dev,
+ libexpat1-dev,
+ git,
+ libssl-dev,
+ ca-certificates,
+ autotools-dev
+Standards-Version: 4.6.2
+
+
+Package: audioreach-graphmgr
+Architecture: arm64
+Depends: ${misc:Depends}
+Description: Qualcomm audio graphservice
+
