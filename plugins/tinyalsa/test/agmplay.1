@@ -1,0 +1,149 @@
+.TH AGMPLAY 1 "2026-09-03" "AudioReach Graph Manager" "User Commands"
+.SH NAME
+agmplay \- play a WAV file via the AudioReach Graph Manager
+.SH SYNOPSIS
+.B agmplay
+.I file.wav
+.B \-i
+.I intf_name
+.RI [ options ]
+.SH DESCRIPTION
+.B agmplay
+plays a PCM WAV file through one or more AGM audio interfaces.
+The input file must reside under the
+.I /data/
+directory.
+.PP
+Playback stops at the end of the file or when the process receives
+.BR SIGINT .
+.SH OPTIONS
+.TP
+.BI \-i " intf_name " [ intf_name ...]
+Audio interface name(s) to play through (required).
+The name must match an entry in
+.IR /etc/backend_conf.xml .
+When
+.B \-num_intf
+is greater than 1, provide the same number of interface names after
+.BR \-i .
+RX (playback) interfaces available on this platform include:
+.RS
+.TP
+.B CODEC_DMA interfaces
+CODEC_DMA-LPAIF_WSA-RX-0, CODEC_DMA-LPAIF_WSA-RX-1, CODEC_DMA-LPAIF_WSA-RX-3, CODEC_DMA-LPAIF_WSA-RX-4,
+CODEC_DMA-LPAIF_RXTX-RX-0, CODEC_DMA-LPAIF_RXTX-RX-1, CODEC_DMA-LPAIF_RXTX-RX-2,
+CODEC_DMA-LPAIF_RXTX-RX-3, CODEC_DMA-LPAIF_RXTX-RX-5, CODEC_DMA-LPAIF_RXTX-RX-6,
+CODEC_DMA-LPAIF_WSA2-RX-0, CODEC_DMA-LPAIF_WSA2-RX-1,
+CODEC_DMA-QAIF-RX-2, CODEC_DMA-QAIF-RX-3
+.TP
+.B Other interfaces
+SLIM-DEV1-RX-0, USB_AUDIO-RX, DISPLAY_PORT-RX, MI2S-LPAIF-RX-PRIMARY,
+MI2S-LPAIF-RX-SECONDARY, MI2S-LPAIF-RX-TERTIARY, TDM-LPAIF-RX-PRIMARY,
+BTFM_PROXY-RX-0
+.RE
+.TP
+.BI \-num_intf " N"
+Number of audio interfaces to use simultaneously (default: 1).
+.TP
+.BI \-D " card"
+ALSA sound card number.
+The AGM virtual sound card is typically card
+.B 100
+(default).
+.TP
+.BI \-d " device"
+ALSA PCM device number within the card.
+Refer to
+.I /etc/card-defs.xml
+for the playback-capable virtual frontend devices available on the target
+(those with
+.BR playback=1 ).
+Default: 100.
+.TP
+.BI \-c " channels"
+Number of channels (default: read from WAV header).
+.TP
+.BI \-r " rate"
+Sample rate in Hz (default: read from WAV header).
+.TP
+.BI \-b " bits"
+Bit depth: 16, 24, or 32 (default: read from WAV header).
+.TP
+.BI \-skv " stream_kv"
+Stream key-value pair (hex). Defaults to
+.B PCM_LL_PLAYBACK
+(or
+.B HAPTICS_PLAYBACK
+when
+.B \-h
+is set).
+.TP
+.BI \-dkv " device_kv " [ device_kv ...]
+Device key-value pair(s) (hex). Provide one value per interface when
+.B \-num_intf
+is greater than 1 (default: SPEAKER).
+.TP
+.BI \-ikv " instance_kv"
+Instance key-value pair. Assign 0 if no instance KV is present in the graph
+(default: INSTANCE_1).
+.TP
+.BI \-dppkv " devicepp_kv " [ devicepp_kv ...]
+Device post-processing key-value pair(s) (hex). Provide one value per
+interface. Assign 0 if no device PP is present in the graph
+(default: DEVICEPP_RX_AUDIO_MBDRC).
+.TP
+.BI \-h " haptics"
+Enable haptics playback path.
+.TP
+.BI \-is_24_LE " 0|1"
+Only relevant when the WAV file has a 32-bit bit depth.
+Set to
+.B 1
+to use
+.B S24_LE
+format instead of
+.B S32_LE
+(default: 0).
+.TP
+.BI \-usb_d " usb_device"
+USB device index (default: 1). Used only with the
+.B USB_AUDIO-RX
+interface.
+.TP
+.B \-help
+Print a brief usage summary and exit.
+.SH EXAMPLES
+Play a stereo WAV file through a slim-bus interface:
+.PP
+.RS
+.EX
+agmplay /data/music.wav \-i SLIM_0_RX \-dkv 0x1 \-skv 0x1
+.EE
+.RE
+.PP
+Play through two interfaces simultaneously:
+.PP
+.RS
+.EX
+agmplay /data/music.wav \-num_intf 2 \-i SLIM_0_RX SLIM_1_RX \-dkv 0x1 0x2
+.EE
+.RE
+.PP
+Play through a USB audio device:
+.PP
+.RS
+.EX
+agmplay /data/music.wav \-i USB_AUDIO-RX \-usb_d 2
+.EE
+.RE
+.SH FILES
+.TP
+.I /etc/backend_conf.xml
+Backend configuration file used to look up interface media parameters.
+.TP
+.I /etc/card-defs.xml
+Defines the virtual sound card and its PCM frontend devices.
+.SH SEE ALSO
+.BR agmcap (1)
+.SH AUTHORS
+The AudioReach Graph Manager contributors.
