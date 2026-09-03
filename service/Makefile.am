@@ -35,13 +35,22 @@ if USE_DEFAULT_ACDB_PATH
 libagm_la_CFLAGS += -DUSE_DEFAULT_ACDB_PATH
 endif
 
+if CUTILS_SUPPORTED
+libagm_la_LIBADD += -lcutils -llog
+AM_CFLAGS += -DAGM_USE_CUTILS
+endif
+
 if USE_SYSLOG
 libagm_la_CFLAGS += -DAGM_USE_SYSLOG
 endif
+
+if MEMLOGGER_SUPPORTED
+libagm_la_LIBADD += -laudio_log_utils -larmemlog
+else
 libagm_la_CFLAGS += -DAGM_MEMLOG_UNSUPPORTED
 
 if USE_GLIB
-libagm_la_LIBADD += -lglib-2.0
+libagm_la_LIBADD += $(GLIB_LIBS)
 libagm_la_CFLAGS += $(GLIB_CFLAGS) -include glib.h
 endif
 

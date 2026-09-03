@@ -135,7 +135,6 @@ class ClientInfo : public ISessionOps {
     int removeSharedMemoryFdPairs(uint32_t sessionId, int dupFd) override;
 
     static void onDeath(void *cookie);
-    void onDeath();
 
     static void onCallback(uint32_t sessionId, struct agm_event_cb_params *eventParams,
                            void *clientData);

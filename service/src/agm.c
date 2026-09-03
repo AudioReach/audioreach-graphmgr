@@ -37,6 +37,8 @@
 #include <agm/utils.h>
 #ifndef AGM_MEMLOG_UNSUPPORTED
 #include <agm/agm_memlogger.h>
+#else
+#include "gsl_intf.h"
 #endif
 #include "ats.h"
 #include <stdio.h>

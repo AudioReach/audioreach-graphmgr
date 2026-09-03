@@ -41,9 +41,12 @@ AC_ARG_WITH([use_default_acdb_path],
     [with_use_default_acdb_path=no])
 AM_CONDITIONAL([USE_DEFAULT_ACDB_PATH], [test "x${with_use_default_acdb_path}" = "xyes"])
 
-AC_ARG_WITH([glib],
-      AC_HELP_STRING([--with-glib],
-         [enable glib, Build against glib. Use this when building for HLOS systems which use glib]))
+AC_ARG_WITH([card-def-native],
+    AS_HELP_STRING([--with-card-def-native=PATH],
+        [path to native card-defs xml (default /etc/card-defs-native.xml)]),
+    [card_def_native=$withval],
+    [card_def_native="/etc/card-defs-native.xml"])
+AC_SUBST([CARD_DEF_FILE_NATIVE], [$card_def_native])
 
 # Optional ALSALIB build support
 AC_ARG_ENABLE([alsalib],
@@ -51,6 +54,16 @@ AC_ARG_ENABLE([alsalib],
   [enable_alsalib=$enableval],
   [enable_alsalib=no])
 AM_CONDITIONAL([BUILD_ALSALIB], [test "x$enable_alsalib" = "xyes"])
+
+AC_ARG_WITH([cutils],
+    AS_HELP_STRING([Use cutils (default is no)]),
+    [with_cutils=$withval],
+    [with_cutils=no])
+AM_CONDITIONAL([CUTILS_SUPPORTED], [test "x${with_cutils}" = "xyes"])
+
+AC_ARG_WITH([glib],
+      AC_HELP_STRING([--with-glib],
+         [enable glib, Build against glib. Use this when building for HLOS systems which use glib]))
 
 if (test "x${with_glib}" = "xyes"); then
         PKG_CHECK_MODULES(GTHREAD, gthread-2.0 >= 2.16, dummy=yes,
@@ -65,6 +78,10 @@ if (test "x${with_glib}" = "xyes"); then
 fi
 
 AM_CONDITIONAL(USE_GLIB, test "x${with_glib}" = "xyes")
+
+AC_CHECK_FUNCS([strlcpy])
+AM_CONDITIONAL(USE_G_STR_FUNC,
+    [test "x${with_glib}" = "xyes" && ! test "x$ac_cv_func_strlcpy" = "xyes"])
 
 AC_ARG_WITH([no_ipc],
     AS_HELP_STRING([--with-no-ipc],[disable ipc communication to AGM (default is no)]),
@@ -88,9 +105,6 @@ fi
 
 AC_SUBST(DBUS_CFLAGS)
 AC_SUBST(DBUS_LIBS)
-
-AC_CHECK_FUNCS([strlcpy])
-AM_CONDITIONAL(USE_G_STR_FUNC, ! test "x$ac_cv_func_strlcpy" = "xyes")
 
 AC_CONFIG_FILES(
 Makefile

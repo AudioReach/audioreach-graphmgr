@@ -133,7 +133,7 @@ struct pcm_plugin_hw_constraints agm_pcm_constrs = {
         .max = 8,
     },
     .period_bytes = {
-        .min = 96,
+        .min = 16,
         .max = 122880,
     },
 };
@@ -719,10 +719,6 @@ static int agm_pcm_close(struct pcm_plugin *plugin)
         priv->mmap_status = false;
     }
     if (priv->buf_info) {
-        if (priv->buf_info->data_buf_fd != -1)
-            close(priv->buf_info->data_buf_fd);
-        if (priv->buf_info->pos_buf_fd != -1)
-            close(priv->buf_info->pos_buf_fd);
         free(priv->buf_info);
     }
     free(plugin->priv);
