@@ -80,6 +80,13 @@ AC_SUBST(SPF_CFLAGS)
 PKG_CHECK_MODULES([KVH2XML], [kvh2xml])
 AC_SUBST([KVH2XML_CFLAGS])
 
+# tinycompress is not available on all platforms (e.g. Raspberry Pi), so
+# probe for it optionally instead of failing configure when it is absent.
+PKG_CHECK_MODULES([TINYCOMPRESS], [tinycompress], [have_tinycompress=yes], [have_tinycompress=no])
+AM_CONDITIONAL([HAVE_TINYCOMPRESS], [test "x${have_tinycompress}" = "xyes"])
+AC_SUBST([TINYCOMPRESS_CFLAGS])
+AC_SUBST([TINYCOMPRESS_LIBS])
+
 # Check dependency only if with_no_ipc is not set
 if (test "x${with_no_ipc}" = "xno"); then
 PKG_CHECK_MODULES(DBUS, [ dbus-1 >= 1.4.12 ], dummy=yes,
