@@ -43,6 +43,14 @@ else
 fi
 AC_SUBST([SND_PARSER_LIBDIR])
 
+AC_ARG_WITH([audio-log-util-bridge],
+    AS_HELP_STRING([--with-audio-log-util-bridge],
+                   [route AGM logs through audio-log-util (default is no)]),
+    [with_audio_log_util_bridge=$withval],
+    [with_audio_log_util_bridge=no])
+AM_CONDITIONAL([AGM_AUDIO_LOG_UTIL_BRIDGE],
+               [test "x${with_audio_log_util_bridge}" = "xyes"])
+
 AC_ARG_WITH([are_on_apps],
     AS_HELP_STRING([--with-are-on-apps],[Enable ARE (SPF) on APPS support (default is no)]),
     [with_are_on_apps=$withval],

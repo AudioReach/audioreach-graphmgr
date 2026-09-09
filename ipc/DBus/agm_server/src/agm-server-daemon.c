@@ -34,7 +34,7 @@
 ** SPDX-License-Identifier: BSD-3-Clause
 **/
 
-#define LOG_TAG "agm_server_daemon"
+#define LOG_TAG "AGM: ipc_server"
 
 #include <glib.h>
 #include <signal.h>

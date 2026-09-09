@@ -27,6 +27,13 @@ agm_server_LDFLAGS += -lspf @GPR_LIBS@
 agm_server_CFLAGS += -DARE_ON_APPS @GPR_CFLAGS@
 endif
 
+if AGM_AUDIO_LOG_UTIL_BRIDGE
+libagmserverwrapper_la_CFLAGS += -DAGM_AUDIO_LOG_UTIL_BRIDGE -DAGM_LOG_MODULE=MODULE_AGM_IPC_SERVER
+libagmserverwrapper_la_LIBADD += -laudio_log_util
+agm_server_CFLAGS += -DAGM_AUDIO_LOG_UTIL_BRIDGE -DAGM_LOG_MODULE=MODULE_AGM_IPC_SERVER
+agm_server_LDADD += -laudio_log_util
+endif
+
 if USE_G_STR_FUNC
 AM_CFLAGS += -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
 endif

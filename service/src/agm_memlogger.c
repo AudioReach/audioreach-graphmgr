@@ -4,6 +4,7 @@
 */
 
 #include <agm/agm_memlogger.h>
+#define LOG_TAG "AGM: memlogger"
 #include <agm/utils.h>
 
 void agm_memlog_init()

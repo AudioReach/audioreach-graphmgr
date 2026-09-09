@@ -32,7 +32,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
 **/
 
-#define LOG_TAG "ipc_proxy"
+#define LOG_TAG "AGM: ipc_server"
 
 #include <utils/Log.h>
 

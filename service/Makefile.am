@@ -63,6 +63,15 @@ else
 libagm_la_CFLAGS += -DAGM_MEMLOG_UNSUPPORTED
 endif
 
+if AGM_AUDIO_LOG_UTIL_BRIDGE
+libagm_la_CFLAGS += -DAGM_AUDIO_LOG_UTIL_BRIDGE -DAGM_LOG_MODULE=MODULE_AGM_CORE
+libagm_la_LIBADD += -laudio_log_util
+else
+if AGM_LOG_DEBUG_ENABLE
+libagm_la_CFLAGS += -DAGM_LOG_DEBUG_ENABLE
+endif
+endif
+
 if USE_GLIB
 libagm_la_LIBADD += $(GLIB_LIBS)
 libagm_la_CFLAGS += $(GLIB_CFLAGS) -include glib.h

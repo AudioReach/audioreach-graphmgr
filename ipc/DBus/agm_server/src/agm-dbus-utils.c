@@ -34,7 +34,7 @@
 ** SPDX-License-Identifier: BSD-3-Clause
 **/
 
-#define LOG_TAG "agm_dbus_utils"
+#define LOG_TAG "AGM: ipc_server"
 
 #include <stdio.h>
 #include <errno.h>
