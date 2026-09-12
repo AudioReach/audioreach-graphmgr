@@ -12,13 +12,13 @@ lib_includedir = $(includedir)/sndparser/
 AM_CFLAGS = -I $(srcdir)/inc -I $(top_srcdir)/service/inc/public
 AM_CFLAGS += -Wno-unused-parameter
 AM_CFLAGS += -DCARD_DEF_FILE=\"/etc/card-defs.xml\"
-AM_CFLAGS += -DCARD_DEF_FILE_NATIVE=\"/etc/card-defs-native.xml\"
+AM_CFLAGS += -DCARD_DEF_FILE_NATIVE=\"@CARD_DEF_FILE_NATIVE@\"
 AM_CFLAGS += -Wl,-z,defs
 
 lib_LTLIBRARIES      = libsndcardparser.la
 libsndcardparser_la_SOURCES   = src/snd-card-parser.c
 libsndcardparser_la_LIBADD = -lexpat -lpthread
-libsndcardparser_la_LDFLAGS   = -shared -version-number @LT_VERSION_NUMBER@
+libsndcardparser_la_LDFLAGS   = -avoid-version -shared
 libsndcardparser_la_CFLAGS = $(AM_CFLAGS)
 if USE_GLIB
 libsndcardparser_la_LIBADD += $(GLIB_LIBS)

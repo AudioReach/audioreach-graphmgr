@@ -165,8 +165,6 @@
     <device name="QAIF-QAIF_AUD-TX-4" rate="48000" ch="1" bits="16" />
     <device name="QAIF-QAIF_AUD-RX-5" rate="48000" ch="1" bits="16" />
     <device name="QAIF-QAIF_AUD-TX-5" rate="48000" ch="1" bits="16" />
-    <device name="QAIF-QAIF_AUD-TX-8" rate="48000" ch="1" bits="16" />
-    <device name="QAIF-QAIF_AUD-RX-8" rate="48000" ch="1" bits="16" />
     <device name="QAIF-QAIF_VA-RX-0" rate="48000" ch="1" bits="16" />
     <device name="QAIF-QAIF_VA-TX-0" rate="48000" ch="1" bits="16" />
 </config>

@@ -8,7 +8,6 @@
 #include <agm/agm_api.h>
 #include <aidl/vendor/qti/hardware/agm/BnAGM.h>
 #include <aidl/vendor/qti/hardware/agm/IAGMCallback.h>
-#include <map>
 #include <log/log.h>
 #include <algorithm>
 #include <unordered_map>
@@ -135,7 +134,6 @@ class ClientInfo : public ISessionOps {
     int removeSharedMemoryFdPairs(uint32_t sessionId, int dupFd) override;
 
     static void onDeath(void *cookie);
-    void onDeath();
 
     static void onCallback(uint32_t sessionId, struct agm_event_cb_params *eventParams,
                            void *clientData);

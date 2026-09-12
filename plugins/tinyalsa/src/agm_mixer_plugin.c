@@ -44,7 +44,6 @@
 #include <sys/time.h>
 #include <limits.h>
 #include <linux/ioctl.h>
-#include <pthread.h>
 
 #include <sound/asound.h>
 
@@ -1564,9 +1563,10 @@ static int amp_pcm_tag_info_get(struct mixer_plugin *plugin,
 }
 
 static int amp_pcm_send_msg_get(struct mixer_plugin *plugin,
-                struct snd_control *ctl, struct snd_ctl_tlv *tlv) {
+                struct snd_control *ctl, struct snd_ctl_tlv *tlv)
+{
     /* Get for sendMsg not supported */
-                    return 0;
+    return 0;
 }
 
 
@@ -1576,6 +1576,8 @@ static int amp_pcm_send_msg_put(struct mixer_plugin *plugin,
     int ret = -EINVAL;
 
     agm_msg_config *payload = (agm_msg_config *) &tlv->tlv[0];
+    if (!payload)
+        return -EINVAL;
 
     ret = agm_cshm_msg(payload->mem_id, payload->offset, payload->length,
                          payload->miid, payload->flags);

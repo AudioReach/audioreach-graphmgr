@@ -44,7 +44,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <strings.h>
-#include <string.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <tinyalsa/plugin.h>
@@ -133,7 +132,7 @@ struct pcm_plugin_hw_constraints agm_pcm_constrs = {
         .max = 8,
     },
     .period_bytes = {
-        .min = 96,
+        .min = 16,
         .max = 122880,
     },
 };
@@ -333,7 +332,7 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
 
     if (ret == 0) {
         circ_buf_pos = agm_pcm_bytes_to_frames(read_index, priv->media_config);
-        pos = (circ_buf_pos / period_size) * period_size;
+        pos = circ_buf_pos;
         old_hw_ptr = agm_pcm_plugin_get_hw_ptr(priv);
         hw_base = priv->pos_buf->hw_ptr_base;
 
@@ -350,7 +349,7 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
                                          priv->pos_buf->wall_clk_lsw);
             // Compute delta only if diff is greater than zero
             if (dsp_wall_clk > cached_wall_clk) {
-                __builtin_sub_overflow(dsp_wall_clk, cached_wall_clk, &sub_res);
+                __builtin_usubl_overflow(dsp_wall_clk,cached_wall_clk,&sub_res);
                 delta_wall_clk_us = (int64_t)sub_res;
             }
         }
@@ -719,10 +718,6 @@ static int agm_pcm_close(struct pcm_plugin *plugin)
         priv->mmap_status = false;
     }
     if (priv->buf_info) {
-        if (priv->buf_info->data_buf_fd != -1)
-            close(priv->buf_info->data_buf_fd);
-        if (priv->buf_info->pos_buf_fd != -1)
-            close(priv->buf_info->pos_buf_fd);
         free(priv->buf_info);
     }
     free(plugin->priv);
@@ -934,7 +929,7 @@ int agm_pcm_open(struct pcm_plugin **plugin, unsigned int card,
     struct agm_buffer_config *buffer_config;
     uint64_t handle;
     enum agm_session_mode sess_mode = AGM_SESSION_DEFAULT;
-    int ret = 0, session_id = device, sess_mode_val = 0;
+    int ret = 0, session_id = device;
     void *card_node, *pcm_node;
 
     agm_pcm_plugin = calloc(1, sizeof(struct pcm_plugin));
@@ -996,8 +991,7 @@ int agm_pcm_open(struct pcm_plugin **plugin, unsigned int card,
     priv->dev_node = pcm_node;
     priv->session_id = session_id;
     priv->mmap_status = false;
-    snd_card_def_get_int(pcm_node, "session_mode", &sess_mode_val);
-    sess_mode = (enum agm_session_mode)sess_mode_val;
+    snd_card_def_get_int(pcm_node, "session_mode", &sess_mode);
 
     ret = agm_session_open(session_id, sess_mode, &handle);
     if (ret) {

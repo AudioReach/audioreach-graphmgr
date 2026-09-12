@@ -2545,6 +2545,7 @@ int session_obj_write(struct session_obj *sess_obj, void *buff, size_t *count)
             sess_obj->bytes_written = 0;
         }
     }
+    
 
 done:
     pthread_mutex_unlock(&sess_obj->lock);

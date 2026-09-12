@@ -37,6 +37,8 @@
 #include <agm/utils.h>
 #ifndef AGM_MEMLOG_UNSUPPORTED
 #include <agm/agm_memlogger.h>
+#else
+#include "gsl_intf.h"
 #endif
 #include "ats.h"
 #include <stdio.h>
@@ -55,7 +57,6 @@
 #include "posal.h"
 #include "spf_main.h"
 #endif
-#include "gsl_intf.h"
 
 #ifdef AGM_USE_CUTILS
 #include <cutils/properties.h>
