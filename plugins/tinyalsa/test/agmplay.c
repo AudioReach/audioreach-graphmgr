@@ -74,7 +74,7 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
                  unsigned int channels, unsigned int rate, unsigned int bits,
                  unsigned int *device_kv, unsigned int stream_kv, unsigned int instance_kv,
                  unsigned int *devicepp_kv, struct chunk_fmt fmt, bool haptics, char **intf_name,
-                 int intf_num, bool is_24_LE);
+                 int intf_num, bool is_24_LE, unsigned int period_size, unsigned int period_count);
 
 void stream_close(int sig)
 {
@@ -83,10 +83,10 @@ void stream_close(int sig)
     close = 1;
 }
 
-static void usage(char *progname)
+static void usage(const char *progname)
 {
-    printf(" Usage: file.wav in /data [-help print usage] [-D card] [-d device]\n"
-           " [-c channels] [-r rate] [-b bits]\n"
+    printf(" Usage: %s file.wav [-help print usage] [-D card] [-d device]\n"
+           " [-c channels] [-r rate] [-b bits] [-p period_size] [-n n_periods]\n"
            " [-num_intf num of interfaces followed by interface name]\n"
            " [-i intf_name] : Can be multiple if num_intf is more than 1\n"
            " [-dkv device_kv] : Can be multiple if num_intf is more than 1\n"
@@ -105,11 +105,14 @@ int main(int argc, char **argv)
     struct riff_wave_header riff_wave_header;
     struct chunk_header chunk_header;
     struct chunk_fmt chunk_fmt;
+    const char *progname = argv[0];
     unsigned int card = 100, device = 100, i=0;
     unsigned int usb_device = 1;
     unsigned int channels = 2;
     unsigned int rate = 48000;
     unsigned int bits = 16;
+    unsigned int period_size = 1024;
+    unsigned int period_count = 4;
     int intf_num = 1;
     uint32_t dkv = SPEAKER;
     uint32_t dppkv = DEVICEPP_RX_AUDIO_MBDRC;
@@ -129,7 +132,7 @@ int main(int argc, char **argv)
     }
 
     if (argc < 3) {
-        usage(argv[0]);
+        usage(progname);
         return 1;
     }
 
@@ -207,6 +210,14 @@ int main(int argc, char **argv)
             argv++;
             if (*argv)
                 card = atoi(*argv);
+        } else if (strcmp(*argv, "-p") == 0) {
+            argv++;
+            if (*argv)
+                period_size = atoi(*argv);
+        } else if (strcmp(*argv, "-n") == 0) {
+            argv++;
+            if (*argv)
+                period_count = atoi(*argv);
         } else if (strcmp(*argv, "-num_intf") == 0) {
             argv++;
             if (*argv)
@@ -273,7 +284,7 @@ int main(int argc, char **argv)
             if (*argv)
                 usb_device = atoi(*argv);
         } else if (strcmp(*argv, "-help") == 0) {
-            usage(argv[0]);
+            usage(progname);
         }
         if (*argv)
             argv++;
@@ -283,7 +294,8 @@ int main(int argc, char **argv)
         return 1;
 
     play_sample(file, card, device, usb_device, channels, rate, bits, device_kv, stream_kv,
-                 instance_kv, devicepp_kv, chunk_fmt, haptics, intf_name, intf_num, is_24_LE);
+                 instance_kv, devicepp_kv, chunk_fmt, haptics, intf_name, intf_num, is_24_LE,
+                 period_size, period_count);
 
     fclose(file);
     if (device_kv)
@@ -300,7 +312,7 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
                  unsigned int channels, unsigned int rate, unsigned int bits,
                  unsigned int *device_kv, unsigned int stream_kv, unsigned int instance_kv,
                  unsigned int *devicepp_kv, struct chunk_fmt fmt, bool haptics, char **intf_name,
-                 int intf_num, bool is_24_LE)
+                 int intf_num, bool is_24_LE, unsigned int period_size, unsigned int period_count)
 {
     struct pcm_config config;
     struct pcm *pcm;
@@ -336,8 +348,8 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
     memset(&config, 0, sizeof(config));
     config.channels = fmt.num_channels;
     config.rate = fmt.sample_rate;
-    config.period_size = 1024;
-    config.period_count = 4;
+    config.period_size = period_size;
+    config.period_count = period_count;
     if (fmt.bits_per_sample == 32) {
         if (is_24_LE)
             config.format = PCM_FORMAT_S24_LE;
@@ -452,8 +464,9 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
         if (ret) {
             printf("PCM Converter not present for this graph\n");
         } else {
-            if (configure_pcm_converter(mixer, device, STREAM_PCM, 
-                                        fmt.num_channels, fmt.bits_per_sample, miid)) {
+            if (configure_pcm_converter(mixer, device, intf_name[index], STREAM_PCM_CONVERTER,
+                                STREAM_PCM, fmt.sample_rate, fmt.num_channels,
+                                fmt.bits_per_sample)) {
                 printf("Failed to configure pcm converter\n");
                 goto err_close_mixer;
             }
@@ -463,8 +476,9 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
         if (ret) {
             printf("MFC not present for this graph\n");
         } else {
-            if (configure_mfc(mixer, device, STREAM_PCM, dev_config[index].rate, 
-                dev_config[index].ch, dev_config[index].bits, miid)) {
+            if (configure_mfc(mixer, device, intf_name[index], PER_STREAM_PER_DEVICE_MFC,
+                           STREAM_PCM, dev_config[index].rate, dev_config[index].ch,
+                           dev_config[index].bits, miid)) {
                 printf("Failed to configure pspd mfc\n");
                 goto err_close_mixer;
             }

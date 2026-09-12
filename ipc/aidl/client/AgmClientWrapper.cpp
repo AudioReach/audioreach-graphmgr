@@ -660,17 +660,19 @@ int agm_session_write_datapath_params(uint32_t session_id, struct agm_buff *buf)
 
 int32_t agm_cshm_alloc(uint32_t size, agm_cshm_info *info) {
 
-    const native_handle *FdHandle = nullptr;
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
+    const native_handle *fdHandle = nullptr;
     AgmCshmInfo infoAidl;
     AgmCshmInfo infoAidlResult;
     infoAidl.type = static_cast<AgmCshmCacheType>(info->type);
     infoAidl.flags = info->flags;
     auto status = client->ipc_agm_cshm_alloc(size, infoAidl, &infoAidlResult);
-    auto fdInfo = AidlToLegacy::getFdIntFromNativeHandle(infoAidlResult.allocHandle);
-    info->mem_id = infoAidlResult.memID;
-    info->fd = fdInfo.first;
+    if (status.isOk()) {
+        auto fdInfo = AidlToLegacy::getFdIntFromNativeHandle(infoAidlResult.allocHandle);
+        info->mem_id = infoAidlResult.memID;
+        info->fd = fdInfo.first;
+    }
 
     return statusTFromBinderStatus(status);
 }

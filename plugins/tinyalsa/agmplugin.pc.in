@@ -5,6 +5,6 @@ includedir=@includedir@
 
 Name: agmplugin
 Description: agm plugin library
-Version: @LT_VERSION@
+Version: @VERSION@
 Libs: -L${libdir} -lagmplugin
 Cflags: -I${includedir}
