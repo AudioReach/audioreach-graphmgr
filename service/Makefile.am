@@ -34,7 +34,7 @@ endif
 
 lib_LTLIBRARIES = libagm.la
 libagm_la_SOURCES = $(agm_sources)
-libagm_la_LIBADD = -ltinyalsa -lar-osal -lar-gsl -lar-ats -lsndcardparser
+libagm_la_LIBADD = -ltinyalsa @OSAL_LIBS@ @GSL_LIBS@ @ATS_LIBS@ -lsndcardparser
 libagm_la_LDFLAGS = -L$(top_builddir)/snd_parser/.libs
 
 libagm_la_CFLAGS = $(AM_CFLAGS) -DACDB_PATH=\"/etc/acdbdata/\" -DACDB_DELTA_FILE_PATH="/etc/acdbdata/delta"
@@ -69,7 +69,7 @@ libagm_la_CFLAGS += -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
 endif
 
 if USE_ARE_ON_APPS
-libagm_la_LIBADD += -lspf -lar-gpr
+libagm_la_LIBADD += -lspf @GPR_LIBS@
 libagm_la_CFLAGS += -DARE_ON_APPS
 endif
 
