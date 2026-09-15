@@ -611,7 +611,7 @@ static int amp_create_pcm_info_from_card(struct amp_dev_info *adi,
         ret = snd_card_def_get_str(pcm_node, "name",
                                    &adi->names[idx]);
         if (ret) {
-            AGM_LOGE("%s failed to get name for %s pcm wih idx %d\n",
+            AGM_LOGE("%s failed to get name for %s pcm with idx %d\n",
                    __func__, dir, idx);
             return -EINVAL;
         }

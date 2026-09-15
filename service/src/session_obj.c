@@ -322,7 +322,7 @@ static struct session_obj* session_obj_create(int session_id)
 
     obj = calloc(1, sizeof(struct session_obj));
     if (!obj) {
-        AGM_LOGE("Memory allocation failed for sesssion object\n");
+        AGM_LOGE("Memory allocation failed for session object\n");
         return obj;
     }
 
