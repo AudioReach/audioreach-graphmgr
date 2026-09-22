@@ -458,7 +458,7 @@ int agm_compress_tstamp(void *data,
 }
 
 int agm_compress_get_tstamp(void *data,
-                        unsigned int *samples, unsigned int *sampling_rate)
+                        unsigned long long *samples, unsigned int *sampling_rate)
 {
     struct agm_compress_priv *priv = data;
     struct snd_compr_tstamp ktstamp;
@@ -498,7 +498,7 @@ static int agm_compress_avail(void *data,
 }
 
 int agm_compress_get_hpointer(void *data,
-                unsigned int *avail, struct timespec *tstamp)
+                unsigned long long *avail, struct timespec *tstamp)
 {
         struct agm_compress_priv *priv = data;
         struct snd_compr_avail kavail;
