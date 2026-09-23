@@ -107,6 +107,13 @@ AC_ARG_WITH([armemlog],
     [with_armemlog=no])
 AM_CONDITIONAL([MEMLOGGER_SUPPORTED], [test "x${with_armemlog}" = "xyes"])
 
+AC_ARG_WITH([delta-file-path],
+    AC_HELP_STRING([--with-delta-file-path=PATH],
+        [override ACDB_DELTA_FILE_PATH (default is /etc/acdbdata/delta)]),
+    [delta_file_path=$withval],
+    [delta_file_path=/etc/acdbdata/delta])
+AC_SUBST([DELTA_FILE_PATH], [$delta_file_path])
+
 PKG_CHECK_MODULES([SPF], [spf])
 AC_SUBST(SPF_CFLAGS)
 
