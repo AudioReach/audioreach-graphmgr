@@ -41,6 +41,28 @@ AC_ARG_WITH([use_default_acdb_path],
     [with_use_default_acdb_path=no])
 AM_CONDITIONAL([USE_DEFAULT_ACDB_PATH], [test "x${with_use_default_acdb_path}" = "xyes"])
 
+AC_ARG_WITH([card-def-file],
+    AS_HELP_STRING([--with-card-def-file=FILE],
+        [path to card-defs.xml [default=/etc/card-defs.xml]]),
+    [AGM_CARD_DEF_FILE="$withval"],
+    [AGM_CARD_DEF_FILE="/etc/card-defs.xml"])
+
+AC_ARG_WITH([backend-conf-file],
+    AS_HELP_STRING([--with-backend-conf-file=FILE],
+        [path to backend_conf.xml [default=/etc/backend_conf.xml]]),
+    [AGM_BACKEND_CONF_FILE="$withval"],
+    [AGM_BACKEND_CONF_FILE="/etc/backend_conf.xml"])
+
+AC_ARG_WITH([acdb-path],
+    AS_HELP_STRING([--with-acdb-path=DIR],
+        [path to ACDB data directory [default=/etc/acdbdata/]]),
+    [AGM_ACDB_PATH="$withval"],
+    [AGM_ACDB_PATH="/etc/acdbdata/"])
+
+AC_SUBST([AGM_CARD_DEF_FILE])
+AC_SUBST([AGM_BACKEND_CONF_FILE])
+AC_SUBST([AGM_ACDB_PATH])
+
 AC_ARG_WITH([card-def-native],
     AS_HELP_STRING([--with-card-def-native=PATH],
         [path to native card-defs xml (default /etc/card-defs-native.xml)]),
