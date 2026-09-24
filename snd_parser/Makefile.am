@@ -11,8 +11,8 @@ lib_includedir = $(includedir)/sndparser/
 
 AM_CFLAGS = -I $(srcdir)/inc -I $(top_srcdir)/service/inc/public
 AM_CFLAGS += -Wno-unused-parameter
-AM_CFLAGS += -DCARD_DEF_FILE=\"/etc/card-defs.xml\"
-AM_CFLAGS += -DCARD_DEF_FILE_NATIVE=\"@CARD_DEF_FILE_NATIVE@\"
+AM_CFLAGS += -DCARD_DEF_FILE=\"@AGM_CARD_DEF_FILE@\"
+AM_CFLAGS += -DCARD_DEF_FILE_NATIVE=\"/etc/card-defs-native.xml\"
 AM_CFLAGS += -Wl,-z,defs
 
 lib_LTLIBRARIES      = libsndcardparser.la
