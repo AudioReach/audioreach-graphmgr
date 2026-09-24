@@ -33,10 +33,10 @@ libasound_module_pcm_agm_la_LDFLAGS = -avoid-version -shared \
 if AGM_NO_IPC
 libasound_module_pcm_agm_la_CFLAGS += -DAGM_NO_IPC
 libasound_module_pcm_agm_la_LDFLAGS += -L$(top_builddir)/service/.libs
-libasound_module_pcm_agm_la_LIBADD  = -lasound -lsndcardparser -lagm
+libasound_module_pcm_agm_la_LIBADD  = -lasound -lsndparser -lagm
 else
 libasound_module_pcm_agm_la_LDFLAGS += -L$(top_builddir)/ipc/DBus/agm_client/.libs
-libasound_module_pcm_agm_la_LIBADD  = -lasound -lsndcardparser -lagmclient
+libasound_module_pcm_agm_la_LIBADD  = -lasound -lsndparser -lagmclient
 endif
 
 alsaplugin_LTLIBRARIES      += libasound_module_ctl_agm.la
@@ -49,10 +49,10 @@ libasound_module_ctl_agm_la_LDFLAGS = -avoid-version -shared \
 if AGM_NO_IPC
 libasound_module_ctl_agm_la_CFLAGS += -DAGM_NO_IPC
 libasound_module_ctl_agm_la_LDFLAGS += -L$(top_builddir)/service/.libs
-libasound_module_ctl_agm_la_LIBADD  = -lasound -lsndcardparser -lagm
+libasound_module_ctl_agm_la_LIBADD  = -lasound -lsndparser -lagm
 else
 libasound_module_ctl_agm_la_LDFLAGS += -L$(top_builddir)/ipc/DBus/agm_client/.libs
-libasound_module_ctl_agm_la_LIBADD  = -lasound -lsndcardparser -lagmclient
+libasound_module_ctl_agm_la_LIBADD  = -lasound -lsndparser -lagmclient
 endif
 
 if USE_GLIB

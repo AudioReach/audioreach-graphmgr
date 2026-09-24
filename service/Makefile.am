@@ -34,7 +34,7 @@ endif
 
 lib_LTLIBRARIES = libagm.la
 libagm_la_SOURCES = $(agm_sources)
-libagm_la_LIBADD = -ltinyalsa -lar-osal -lar-gsl -lar-ats -lsndcardparser
+libagm_la_LIBADD = -ltinyalsa -lar-osal -lar-gsl -lar-ats -lsndparser
 libagm_la_LDFLAGS = -L$(top_builddir)/snd_parser/.libs
 
 libagm_la_CFLAGS = $(AM_CFLAGS) -DACDB_PATH=\"/etc/acdbdata/\" -DACDB_DELTA_FILE_PATH="/etc/acdbdata/delta"

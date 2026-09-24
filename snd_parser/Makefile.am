@@ -15,15 +15,15 @@ AM_CFLAGS += -DCARD_DEF_FILE=\"/etc/card-defs.xml\"
 AM_CFLAGS += -DCARD_DEF_FILE_NATIVE=\"@CARD_DEF_FILE_NATIVE@\"
 AM_CFLAGS += -Wl,-z,defs
 
-lib_LTLIBRARIES      = libsndcardparser.la
-libsndcardparser_la_SOURCES   = src/snd-card-parser.c
-libsndcardparser_la_LIBADD = -lexpat -lpthread
-libsndcardparser_la_LDFLAGS   = -shared -version-number @LT_VERSION_NUMBER@
-libsndcardparser_la_CFLAGS = $(AM_CFLAGS)
+lib_LTLIBRARIES      = libsndparser.la
+libsndparser_la_SOURCES   = src/snd-card-parser.c
+libsndparser_la_LIBADD = -lexpat -lpthread
+libsndparser_la_LDFLAGS   = -shared -version-number @LT_VERSION_NUMBER@
+libsndparser_la_CFLAGS = $(AM_CFLAGS)
 if USE_GLIB
-libsndcardparser_la_LIBADD += $(GLIB_LIBS)
-libsndcardparser_la_CFLAGS += $(GLIB_CFLAGS) -include glib.h
+libsndparser_la_LIBADD += $(GLIB_LIBS)
+libsndparser_la_CFLAGS += $(GLIB_CFLAGS) -include glib.h
 endif
 if USE_G_STR_FUNC
-libsndcardparser_la_CFLAGS += -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
+libsndparser_la_CFLAGS += -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
 endif
