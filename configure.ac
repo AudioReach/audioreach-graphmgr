@@ -113,6 +113,23 @@ AC_SUBST(SPF_CFLAGS)
 PKG_CHECK_MODULES([KVH2XML], [kvh2xml])
 AC_SUBST([KVH2XML_CFLAGS])
 
+PKG_CHECK_MODULES([GSL], [gsl])
+AC_SUBST([GSL_LIBS])
+AC_SUBST([GSL_CFLAGS])
+
+PKG_CHECK_MODULES([OSAL], [ar_osal])
+AC_SUBST([OSAL_LIBS])
+AC_SUBST([OSAL_CFLAGS])
+
+PKG_CHECK_MODULES([ATS], [ats])
+AC_SUBST([ATS_LIBS])
+AC_SUBST([ATS_CFLAGS])
+
+if (test "x${with_are_on_apps}" = "xyes"); then
+    PKG_CHECK_MODULES([GPR], [gpr])
+    AC_SUBST([GPR_LIBS])
+fi
+
 # tinycompress is not available on all platforms (e.g. Raspberry Pi), so
 # probe for it optionally instead of failing configure when it is absent.
 PKG_CHECK_MODULES([TINYCOMPRESS], [tinycompress], [have_tinycompress=yes], [have_tinycompress=no])
