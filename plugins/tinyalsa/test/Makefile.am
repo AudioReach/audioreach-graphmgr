@@ -1,6 +1,8 @@
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = agmtest.pc
-EXTRA_DIST = $(pkgconfig_DATA)
+EXTRA_DIST = $(pkgconfig_DATA) agmcap.1 agmplay.1
+
+man_MANS = agmcap.1 agmplay.1
 
 AM_CFLAGS = -Wno-unused-parameter -Wno-unused-result
 AM_CFLAGS += -I$(top_srcdir)/service/inc/public
