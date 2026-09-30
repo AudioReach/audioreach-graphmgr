@@ -13,7 +13,7 @@ if USE_G_STR_FUNC
 AM_CFLAGS += -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
 endif
 
-AM_CFLAGS += -DBACKEND_CONF_FILE=\"/etc/backend_conf.xml\"
+AM_CFLAGS += -DBACKEND_CONF_FILE=\"@AGM_BACKEND_CONF_FILE@\"
 lib_LTLIBRARIES      = libagmmixer.la
 libagmmixer_la_SOURCES   = agmmixer.c
 libagmmixer_la_CFLAGS = $(AM_CFLAGS)
