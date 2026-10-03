@@ -1164,8 +1164,9 @@ static int session_start(struct session_obj *sess_obj)
             }
 
             if ((aif_obj->dev_obj->hw_ep_info.intf == SLIMBUS) ||
-                (aif_obj->dev_obj->hw_ep_info.intf == BTFM_PROXY)) {
-                AGM_LOGD("configuring device early - for SLIMBUS/Connectivity Proxy EPs\n");
+                (aif_obj->dev_obj->hw_ep_info.intf == BTFM_PROXY) ||
+                (aif_obj->dev_obj->hw_ep_info.intf == DISPLAY_PORT)) {
+                AGM_LOGD("configuring device early - for SLIMBUS/Connectivity Proxy/Display Port EPs\n");
                 if (aif_obj->state == AIF_OPENED || aif_obj->state == AIF_STOPPED) {
                     agm_trace_begin("device_prepare");
                     ret = device_prepare(aif_obj->dev_obj);
@@ -1207,9 +1208,10 @@ static int session_start(struct session_obj *sess_obj)
                 goto unwind;
             }
 
-            //Continue/SKIP for SLIMBUS/Connectivity Proxy EP as they are started early.
+            //Continue/SKIP for SLIMBUS/Connectivity Proxy/Display Port EP as they are started early.
             if ((aif_obj->dev_obj->hw_ep_info.intf == SLIMBUS) ||
-                (aif_obj->dev_obj->hw_ep_info.intf == BTFM_PROXY)) {
+                (aif_obj->dev_obj->hw_ep_info.intf == BTFM_PROXY) ||
+                (aif_obj->dev_obj->hw_ep_info.intf == DISPLAY_PORT)) {
                 continue;
             }
 
