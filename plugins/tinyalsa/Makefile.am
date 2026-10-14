@@ -51,6 +51,9 @@ if HAVE_TINYCOMPRESS
 tinycompressplugin_LTLIBRARIES = libtinycompress_module_agm.la
 libtinycompress_module_agm_la_SOURCES = src/agm_compress_plugin.c
 libtinycompress_module_agm_la_CFLAGS  = $(AM_CFLAGS) @TINYCOMPRESS_CFLAGS@
+if HAVE_COMPRESS_OPS_V2
+libtinycompress_module_agm_la_CFLAGS += -DHAVE_COMPRESS_OPS_V2
+endif
 libtinycompress_module_agm_la_LDFLAGS = -shared -version-number @LT_VERSION_NUMBER@ -L$(top_builddir)/snd_parser/.libs
 libtinycompress_module_agm_la_LIBADD  = -ltinyalsa @TINYCOMPRESS_LIBS@ -lpthread -lsndcardparser
 if AGM_NO_IPC
