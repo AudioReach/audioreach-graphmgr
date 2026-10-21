@@ -89,11 +89,13 @@ static char *amp_be_ctl_name_extn[] = {
 enum {
     STATIC_CTL_SET_ACDB_TUNNEL = 0,
     STATIC_CTL_GET_ACDB_TUNNEL,
+    STATIC_CTL_WAKEUP_MIXER_EVENT,
 };
 
-static char *static_acdb_ctl_name_extn[] = {
+static char *static_mixer_ctl_name_extn[] = {
     "setACDBTunnel",
     "getACDBTunnel",
+    "wakeupMixerEvent",
 };
 
 enum {
@@ -1712,6 +1714,25 @@ static int amp_pcm_write_datapath_params_put(struct mixer_plugin *plugin,
     return ret;
 }
 
+/* Dummy implementation for wakeup_get */
+static int amp_wakeup_get(struct mixer_plugin *plugin __unused,
+                struct snd_control *ctl __unused, struct snd_ctl_elem_value *ev __unused)
+{
+    return 0;
+}
+
+/* Writing to this control wakes up the mixerEventThread waiting in mixer_wait_event */
+static int amp_wakeup_put(struct mixer_plugin *plugin,
+                struct snd_control *ctl __unused, struct snd_ctl_elem_value *ev __unused)
+{
+    struct amp_priv *amp_priv = plugin->priv;
+
+    if (amp_priv->event_cb)
+        amp_priv->event_cb(plugin);
+
+    return 0;
+}
+
 /* Dummy implementation for flush_get */
 static int amp_pcm_flush_get(struct mixer_plugin *plugin __unused,
                 struct snd_control *ctl __unused, struct snd_ctl_elem_value *ev __unused)
@@ -2015,7 +2036,7 @@ static void amp_create_acdb_tunnel_set_ctl(struct amp_priv *amp_priv,
     struct snd_control *ctl = AMP_PRIV_GET_CTL_PTR(amp_priv, ctl_idx);
 
     INIT_SND_CONTROL_TLV_BYTES(ctl,
-            static_acdb_ctl_name_extn[STATIC_CTL_SET_ACDB_TUNNEL],
+            static_mixer_ctl_name_extn[STATIC_CTL_SET_ACDB_TUNNEL],
             pcm_setacdbtunnel_bytes, pval, pdata);
 }
 
@@ -2025,7 +2046,7 @@ static void amp_create_acdb_tunnel_get_ctl(struct amp_priv *amp_priv,
     struct snd_control *ctl = AMP_PRIV_GET_CTL_PTR(amp_priv, ctl_idx);
 
     INIT_SND_CONTROL_TLV_BYTES(ctl,
-            static_acdb_ctl_name_extn[STATIC_CTL_GET_ACDB_TUNNEL],
+            static_mixer_ctl_name_extn[STATIC_CTL_GET_ACDB_TUNNEL],
             pcm_getacdbtunnel_bytes, pval, pdata);
 }
 
@@ -2264,7 +2285,18 @@ static int amp_form_pcm_ctls(struct amp_priv *amp_priv, int ctl_idx, int ctl_cnt
     return 0;
 }
 
-static int amp_form_acdb_ctls(struct amp_priv *amp_priv, int ctl_idx)
+static void amp_create_wakeup_ctl(struct amp_priv *amp_priv,
+                int ctl_idx, int pval, void *pdata)
+{
+    struct snd_control *ctl = AMP_PRIV_GET_CTL_PTR(amp_priv, ctl_idx);
+
+    INIT_SND_CONTROL_INTEGER(ctl,
+            static_mixer_ctl_name_extn[STATIC_CTL_WAKEUP_MIXER_EVENT],
+            amp_wakeup_get, amp_wakeup_put,
+            flush_param_int, pval, pdata);
+}
+
+static int amp_form_static_mixer_ctls(struct amp_priv *amp_priv, int ctl_idx)
 {
     struct amp_dev_info *acdb_adi = &amp_priv->acdb_tunnels;
     acdb_adi->get_param_info =
@@ -2276,8 +2308,9 @@ static int amp_form_acdb_ctls(struct amp_priv *amp_priv, int ctl_idx)
 
     amp_create_acdb_tunnel_set_ctl(amp_priv, ctl_idx++, acdb_adi->idx_arr[0],
                                     acdb_adi);
-    amp_create_acdb_tunnel_get_ctl(amp_priv, ctl_idx, acdb_adi->idx_arr[1],
+    amp_create_acdb_tunnel_get_ctl(amp_priv, ctl_idx++, acdb_adi->idx_arr[1],
                                     acdb_adi);
+    amp_create_wakeup_ctl(amp_priv, ctl_idx++, 0, NULL);
 
     return 0;
 }
@@ -2348,9 +2381,6 @@ static void amp_close(struct mixer_plugin **plugin)
     struct mixer_plugin *amp = *plugin;
     struct amp_priv *amp_priv = amp->priv;
 
-    /* unblock mixer event during close */
-    if (amp_priv->event_cb)
-        amp_priv->event_cb(amp);
     amp_register_event_callback(amp, 0);
     amp_subscribe_events(amp, NULL);
     snd_card_def_put_card(amp_priv->card_node);
@@ -2432,8 +2462,8 @@ int amp_open(struct mixer_plugin **plugin, unsigned int card)
     total_ctl_cnt += be_grp_ctl_cnt;
     pcm_ctl_cnt = amp_get_pcm_ctl_count(amp_priv);
     total_ctl_cnt += pcm_ctl_cnt;
-    /* add two static mixer control for acdb param set and get*/
-    total_ctl_cnt += 2;
+    /* add static mixer controls */
+    total_ctl_cnt += (int)ARRAY_SIZE(static_mixer_ctl_name_extn);
     /*
      * Create the controls to be registered
      * When changing this code, be careful to make sure to create
@@ -2458,7 +2488,7 @@ int amp_open(struct mixer_plugin **plugin, unsigned int card)
     if (ret)
         goto err_ctls_alloc;
 
-    ret = amp_form_acdb_ctls(amp_priv, be_ctl_cnt + be_grp_ctl_cnt + pcm_ctl_cnt);
+    ret = amp_form_static_mixer_ctls(amp_priv, be_ctl_cnt + be_grp_ctl_cnt + pcm_ctl_cnt);
     if (ret)
         goto err_ctls_alloc;
 
