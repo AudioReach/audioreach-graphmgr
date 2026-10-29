@@ -17,7 +17,7 @@ fi
 
 echo "Running build script..."
 # Build/Compile audioreach-graphmgr
-source ${GITHUB_WORKSPACE}/install/environment-setup-armv8-7a-qcom-linux
+source ${GITHUB_WORKSPACE}/install/environment-setup-armv8-6a-qcom-linux
 # make sure we are in the right directory
 cd ${GITHUB_WORKSPACE}
 
