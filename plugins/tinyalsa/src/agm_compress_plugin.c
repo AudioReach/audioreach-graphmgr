@@ -1421,7 +1421,12 @@ void agm_session_update_codec_options(struct agm_session_config *sess_cfg,
     }
 }
 
+#ifdef HAVE_COMPRESS_OPS_V2
+struct compress_ops compress_plugin_mops = {
+    .magic = COMPRESS_OPS_V2,
+#else
 struct compress_ops compress_plugin_ops = {
+#endif
     .open_by_name = agm_compress_open_by_name,
     .close = agm_compress_close,
     .get_hpointer = agm_compress_get_hpointer,

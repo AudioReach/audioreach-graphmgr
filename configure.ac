@@ -138,6 +138,19 @@ AM_CONDITIONAL([HAVE_TINYCOMPRESS], [test "x${have_tinycompress}" = "xyes"])
 AC_SUBST([TINYCOMPRESS_CFLAGS])
 AC_SUBST([TINYCOMPRESS_LIBS])
 
+AS_IF([test "x${have_tinycompress}" = "xyes"], [
+    saved_CPPFLAGS="${CPPFLAGS}"
+    CPPFLAGS="${CPPFLAGS} ${TINYCOMPRESS_CFLAGS}"
+    AC_CHECK_DECL([COMPRESS_OPS_V2],
+        [have_compress_ops_v2=yes],
+        [have_compress_ops_v2=no],
+        [[#include <tinycompress/compress_ops.h>]])
+    CPPFLAGS="${saved_CPPFLAGS}"
+], [
+    have_compress_ops_v2=no
+])
+AM_CONDITIONAL([HAVE_COMPRESS_OPS_V2], [test "x${have_compress_ops_v2}" = "xyes"])
+
 # Check dependency only if with_no_ipc is not set
 if (test "x${with_ipc_dbus}" = "xyes"); then
 PKG_CHECK_MODULES(DBUS, [ dbus-1 >= 1.4.12 ], dummy=yes,
