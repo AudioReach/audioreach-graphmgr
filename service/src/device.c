@@ -212,6 +212,8 @@ int device_open(struct device_obj *dev_obj)
 
     obj = device_get_pcm_obj(dev_obj);
 
+    AGM_LOGD("entry, pcm_id %u\n", obj->pcm_id);
+
     pthread_mutex_lock(&obj->lock);
 
     if (obj->group_data)
@@ -283,6 +285,7 @@ update_state:
         grp_data->refcnt.open++;
 done:
     pthread_mutex_unlock(&obj->lock);
+    AGM_LOGD("exit, pcm_id %u, ret %d\n", obj->pcm_id, ret);
     return ret;
 }
 #else
@@ -343,6 +346,8 @@ int device_open(struct device_obj *dev_obj)
     }
 
     obj = device_get_pcm_obj(dev_obj);
+    AGM_LOGD("entry, pcm_id %u\n", obj->pcm_id);
+
     pthread_mutex_lock(&obj->lock);
 
     if (obj->group_data)
@@ -406,6 +411,7 @@ update_state:
         grp_data->refcnt.open++;
 done:
     pthread_mutex_unlock(&obj->lock);
+    AGM_LOGD("exit, pcm_id %u, ret %d\n", obj->pcm_id, ret);
     return ret;
 }
 #endif
@@ -422,6 +428,8 @@ int device_prepare(struct device_obj *dev_obj)
     }
 
     obj = device_get_pcm_obj(dev_obj);
+
+    AGM_LOGD("entry, pcm_id %u\n", obj->pcm_id);
 
     pthread_mutex_lock(&obj->lock);
 
@@ -458,6 +466,7 @@ update_state:
 
 done:
     pthread_mutex_unlock(&obj->lock);
+    AGM_LOGD("exit, pcm_id %u, ret %d\n", obj->pcm_id, ret);
     return ret;
 }
 
@@ -473,6 +482,8 @@ int device_start(struct device_obj *dev_obj)
     }
 
     obj = device_get_pcm_obj(dev_obj);
+
+    AGM_LOGD("entry, pcm_id %u\n", obj->pcm_id);
 
     pthread_mutex_lock(&obj->lock);
     if (obj->state < DEV_PREPARED) {
@@ -501,6 +512,7 @@ int device_start(struct device_obj *dev_obj)
 
 done:
     pthread_mutex_unlock(&obj->lock);
+    AGM_LOGD("exit, pcm_id %u, ret %d\n", obj->pcm_id, ret);
     return ret;
 }
 
@@ -516,6 +528,8 @@ int device_stop(struct device_obj *dev_obj)
     }
 
     obj = device_get_pcm_obj(dev_obj);
+
+    AGM_LOGD("entry, pcm_id %u\n", obj->pcm_id);
 
     pthread_mutex_lock(&obj->lock);
     if (!obj->refcnt.start) {
@@ -550,6 +564,7 @@ update_state:
 
 done:
     pthread_mutex_unlock(&obj->lock);
+    AGM_LOGD("exit, pcm_id %u, ret %d\n", obj->pcm_id, ret);
     return ret;
 }
 
@@ -565,6 +580,8 @@ int device_close(struct device_obj *dev_obj)
     }
 
     obj = device_get_pcm_obj(dev_obj);
+
+    AGM_LOGD("entry, pcm_id %u\n", obj->pcm_id);
 
     pthread_mutex_lock(&obj->lock);
     if (!obj->refcnt.open) {
@@ -603,6 +620,7 @@ update_state:
 
 done:
     pthread_mutex_unlock(&obj->lock);
+    AGM_LOGD("exit, pcm_id %u, ret %d\n", obj->pcm_id, ret);
     return ret;
 }
 
