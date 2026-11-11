@@ -1140,6 +1140,7 @@ int graph_set_config_with_tag(struct graph_obj *graph_obj,
      }
 
      pthread_mutex_lock(&graph_obj->lock);
+     AGM_LOGD("entry graph_handle %p", graph_obj->graph_handle);
      ret = gsl_set_config(graph_obj->graph_handle, (struct gsl_key_vector *)gkv,
                           tag_config->tag_id,
                           (struct gsl_key_vector *)&tag_config->tkv);
@@ -1150,6 +1151,8 @@ int graph_set_config_with_tag(struct graph_obj *graph_obj,
 
      pthread_mutex_unlock(&graph_obj->lock);
 
+
+     AGM_LOGD("exit, ret %d", ret);
      return ret;
 }
 
