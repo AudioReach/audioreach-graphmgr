@@ -23,6 +23,17 @@ m4_define([LT_PATCH], [1])
 AC_SUBST([LT_VERSION], LT_MAJOR.LT_MINOR.LT_PATCH)
 AC_SUBST([LT_VERSION_NUMBER], LT_MAJOR:LT_MINOR:LT_PATCH)
 
+# libagm-specific version.
+# Bump the minor version for the backward-compatible ABI addition.
+m4_define([LIBAGM_MAJOR], [1])
+m4_define([LIBAGM_MINOR], [2])
+m4_define([LIBAGM_PATCH], [0])
+
+AC_SUBST([LIBAGM_VERSION],
+         LIBAGM_MAJOR.LIBAGM_MINOR.LIBAGM_PATCH)
+AC_SUBST([LIBAGM_VERSION_NUMBER],
+         LIBAGM_MAJOR:LIBAGM_MINOR:LIBAGM_PATCH)
+
 AC_ARG_WITH([syslog],
     AS_HELP_STRING([use syslog (default is no)]),
     [with_syslog=$withval],
