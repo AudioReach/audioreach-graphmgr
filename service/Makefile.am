@@ -39,7 +39,7 @@ libagm_la_LDFLAGS = -L$(top_builddir)/snd_parser/.libs
 
 libagm_la_CFLAGS = $(AM_CFLAGS) -DACDB_PATH=\"/etc/acdbdata/\"
 libagm_la_CFLAGS += -DACDB_DELTA_FILE_PATH=@DELTA_FILE_PATH@
-libagm_la_CFLAGS += -DCARD_STATE_UNSUPPORTED
+libagm_la_CFLAGS += -DCARD_STATE_UNSUPPORTED -DAGM_LOG_TIERS
 
 if USE_DEFAULT_ACDB_PATH
 libagm_la_CFLAGS += -DUSE_DEFAULT_ACDB_PATH
@@ -75,4 +75,4 @@ libagm_la_CFLAGS += -DARE_ON_APPS @GPR_CFLAGS@
 endif
 
 libagm_la_CFLAGS += -D__unused=__attribute__\(\(__unused__\)\)
-libagm_la_LDFLAGS += -shared -version-number @LT_VERSION_NUMBER@
+libagm_la_LDFLAGS += -shared -version-number @LIBAGM_VERSION_NUMBER@
