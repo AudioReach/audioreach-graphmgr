@@ -15,6 +15,7 @@ LOCAL_LDFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
 endif
 
 LOCAL_CFLAGS        += -Wall
+LOCAL_CFLAGS        += -DAGM_PCM_PLUGIN_NATIVE
 LOCAL_SRC_FILES     := src/agm_pcm_plugin.c
 
 LOCAL_HEADER_LIBRARIES := \
