@@ -7,7 +7,7 @@
 # Requires autoconf tool later than 2.61
 AC_PREREQ(2.69)
 
-AC_INIT([agm],1.1.1)
+AC_INIT([agm],1.1.2)
 # Does not strictly follow GNU Coding standards
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 LT_INIT
@@ -18,7 +18,7 @@ AC_PROG_CXX
 
 m4_define([LT_MAJOR], [1])
 m4_define([LT_MINOR], [1])
-m4_define([LT_PATCH], [1])
+m4_define([LT_PATCH], [2])
 
 AC_SUBST([LT_VERSION], LT_MAJOR.LT_MINOR.LT_PATCH)
 AC_SUBST([LT_VERSION_NUMBER], LT_MAJOR:LT_MINOR:LT_PATCH)
