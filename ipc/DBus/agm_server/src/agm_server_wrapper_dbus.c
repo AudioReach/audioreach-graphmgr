@@ -39,19 +39,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <sstream>
 #include <agm/agm_api.h>
 #include "agm-dbus-utils.h"
 #include "agm_server_wrapper_dbus.h"
 
-#include "utils.h"
+#include "agm/utils.h"
 
 #define AGM_OBJECT_PATH "/org/qti/agm"
 #define AGM_MODULE_IFACE "org.Qti.Agm"
 #define AGM_SESSION_IFACE "org.Qti.Agm.Session"
 #define AGM_DBUS_CONNECTION "org.Qti.AgmService"
-
-using namespace std;
 
 /* Module Level data */
 typedef struct {
@@ -464,7 +461,7 @@ void agm_free_session(gpointer c_data) {
 static agm_session_data * get_session_data(agm_module_dbus_data *mdata,
                                            uint32_t session_id) {
     agm_session_data *ses_data = NULL;
-    stringstream ss;
+    int id_length = 0;
     size_t obj_length = 0;
 
     AGM_LOGV("%s:Enter", __func__);
@@ -483,11 +480,17 @@ static agm_session_data * get_session_data(agm_module_dbus_data *mdata,
         ses_data->buf = NULL;
         ses_data->buf_size = 0;
         ses_data->session_id = session_id;
-        ss << ses_data->session_id;
+        id_length = snprintf(NULL, 0, "%d", session_id);
         obj_length = sizeof(char)*(strlen(AGM_OBJECT_PATH)) +
                      strlen("/session_") +
-                     ss.str().length() + 1;
+                     id_length + 1;
         ses_data->dbus_obj_path = (char *)malloc(obj_length);
+        if (ses_data->dbus_obj_path == NULL) {
+            AGM_LOGE("dbus_obj_path is NULL\n");
+            free(ses_data);
+            ses_data = NULL;
+            return NULL;
+        }
         snprintf(ses_data->dbus_obj_path,
                  obj_length,
                  "%s%s%d",
@@ -527,6 +530,10 @@ static void agmevent_cb(uint32_t session_id,
     AGM_LOGE("%s: Received event for session %d", __func__, session_id);
 
     buf = malloc(event_params->event_payload_size);
+    if (buf == NULL) {
+        AGM_LOGE("buf is NULL");
+        return;
+    }
     memcpy(buf, event_params->event_payload, event_params->event_payload_size);
 
     message = dbus_message_new_signal(ses_data->dbus_obj_path,
@@ -582,6 +589,10 @@ static void ses_write_done(agm_session_data *ses_data, uint32_t status) {
 
     agm_dbus_send_signal(mdata->conn, message);
     dbus_message_unref(message);
+    if(ses_data->buf) {
+        free(ses_data->buf);
+        ses_data->buf = NULL;
+    }
     AGM_LOGD("%s:Exit", __func__);
     return;
 }
@@ -615,6 +626,10 @@ static void ses_read_done(agm_session_data *ses_data, uint32_t status) {
 
     agm_dbus_send_signal(mdata->conn, message);
     dbus_message_unref(message);
+    if(ses_data->buf) {
+        free(ses_data->buf);
+        ses_data->buf = NULL;
+    }
     AGM_LOGD("%s:Exit", __func__);
     return;
 }
@@ -672,6 +687,13 @@ static void ipc_agm_session_deregister_cb(DBusConnection *conn,
     }
 
     cb_data = (agm_callback_data *)malloc(sizeof(agm_callback_data));
+    if (cb_data == NULL) {
+        AGM_LOGE("cb_data is NULL");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
+                             "cb_data is NULL");
+        agm_free_session(ses_data);
+        return;
+    }
     cb_data->session_id = session_id;
     cb_data->event_type = evt_type;
     cb_data->client_data = client_data;
@@ -746,6 +768,13 @@ static void ipc_agm_session_register_cb(DBusConnection *conn,
     }
 
     cb_data = (agm_callback_data *)malloc(sizeof(agm_callback_data));
+    if (cb_data == NULL) {
+        AGM_LOGE("cb_data is NULL");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
+                             "cb_data is NULL");
+        agm_free_session(ses_data);
+        return;
+    }
     cb_data->session_id = session_id;
     cb_data->event_type = evt_type;
     cb_data->client_data = client_data;
@@ -817,6 +846,12 @@ static void ipc_agm_session_register_for_events(DBusConnection *conn,
     evt_reg_cfg = (struct agm_event_reg_cfg *)
                     calloc (1,(sizeof(struct agm_event_reg_cfg) +
                             (event_config_payload_size)*sizeof(uint8_t)));
+    if (evt_reg_cfg == NULL) {
+        AGM_LOGE("alloc memory failed, evt_reg_cfg is NULL.");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
+                             "alloc memory failed, evt_reg_cfg is NULL.");
+        return;
+    }
     evt_reg_cfg->module_instance_id = module_instance_id;
     evt_reg_cfg->event_id = event_id;
     evt_reg_cfg->event_config_payload_size = event_config_payload_size;
@@ -878,6 +913,12 @@ static void ipc_agm_session_get_params(DBusConnection *conn,
     dbus_message_iter_recurse(&arg_i, &array_i);
     dbus_message_iter_get_fixed_array(&array_i, addr_value, &n_elements);
     payload = (void *)malloc(n_elements*sizeof(char));
+    if (payload == NULL) {
+        AGM_LOGE("payload is NULL.");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
+                              "Ipayload is NULL.");
+        return;
+    }
     memcpy(payload, value, n_elements);
 
     if (agm_session_get_params(session_id, (void *)payload, size) != 0) {
@@ -940,7 +981,7 @@ static void ipc_agm_session_get_buf_info(DBusConnection *conn,
     dbus_message_iter_next(&arg_i);
     dbus_message_iter_get_basic(&arg_i, &flag);
     //dbus_message_iter_next(&arg_i);
-    buf_info = (agm_buf_info *) calloc(1,(sizeof(struct agm_buf_info)));
+    buf_info = (struct agm_buf_info *) calloc(1,(sizeof(struct agm_buf_info)));
 
     if (agm_session_get_buf_info(session_id, buf_info, flag) != 0) {
         AGM_LOGE("agm_session_get_buf_info failed.");
@@ -1010,6 +1051,12 @@ static void ipc_agm_session_aif_set_cal(DBusConnection *conn,
     cal_config = (struct agm_cal_config *)
                         calloc (1, sizeof(struct agm_cal_config) +
                                 num_ckv * sizeof(struct agm_key_value));
+    if (cal_config == NULL) {
+        AGM_LOGE("alloc memory failed, cal_config is NULL.");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
+                             "alloc memory failed, cal_config is NULL.");
+        return;
+    }
     cal_config->num_ckvs = num_ckv;
     memcpy(cal_config->kv, value,
                              cal_config->num_ckvs*sizeof(struct agm_key_value));
@@ -1075,6 +1122,11 @@ static void ipc_agm_session_aif_set_params(DBusConnection *conn,
     dbus_message_iter_recurse(&arg_i, &array_i);
     dbus_message_iter_get_fixed_array(&array_i, addr_value, &n_elements);
     buf = (void *)malloc(n_elements*sizeof(char));
+    if (buf == NULL) {
+        AGM_LOGE("buf is NULL");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED, "buf is NULL");
+        return;
+    }
     memcpy(buf, value, n_elements);
 
     if (agm_session_aif_set_params(session_id, aif_id, buf, size) != 0) {
@@ -1443,7 +1495,7 @@ static void ipc_agm_get_aif_info_list_size(DBusConnection *conn,
         return;
     }
 
-    AGM_LOGV("%s : ", __func__);
+    AGM_LOGV("%s with size: %d", __func__, num_aif_info);
 
     reply = dbus_message_new_method_return(msg);
     dbus_message_iter_init_append(reply, &r_arg);
@@ -1565,8 +1617,14 @@ static void ipc_agm_set_params_with_tag(DBusConnection *conn,
     dbus_message_iter_get_basic(&struct_i, &num_tkvs);
     dbus_message_iter_next(&struct_i);
     size_local = (sizeof(struct agm_tag_config) +
-                        (num_tkvs) * sizeof(agm_key_value));
+                        (num_tkvs) * sizeof(struct agm_key_value));
     tag_config = (struct agm_tag_config *) calloc(1,size_local);
+    if (tag_config == NULL) {
+        AGM_LOGE("tag_config is NULL.");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
+                             "tag_config is NULL.");
+        return;
+    }
     tag_config->tag = tag;
     tag_config->num_tkvs = num_tkvs;
     dbus_message_iter_recurse(&struct_i, &array_i);
@@ -1689,6 +1747,11 @@ static void ipc_agm_session_set_metadata(DBusConnection *conn,
     dbus_message_iter_recurse(&arg_i, &array_i);
     dbus_message_iter_get_fixed_array(&array_i, addr_value, &n_elements);
     metadata = (void *)malloc(n_elements*sizeof(char));
+    if (metadata == NULL) {
+        AGM_LOGE("metadata is NULL");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED, "metadata is NULL");
+        return;
+    }
     memcpy(metadata, value, n_elements);
 
     if (agm_session_set_metadata(session_id, size, (uint8_t *)metadata) != 0) {
@@ -1749,6 +1812,11 @@ static void ipc_agm_session_audio_inf_set_metadata(DBusConnection *conn,
     dbus_message_iter_recurse(&arg_i, &array_i);
     dbus_message_iter_get_fixed_array(&array_i, addr_value, &n_elements);
     metadata = (void *)malloc(n_elements*sizeof(char));
+    if (metadata == NULL) {
+        AGM_LOGE("metadata is NULL");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED, "metadata is NULL");
+        return;
+    }
     memcpy(metadata, value, n_elements);
 
     if (agm_session_aif_set_metadata(session_id,
@@ -1811,6 +1879,11 @@ static void ipc_agm_audio_intf_set_metadata(DBusConnection *conn,
     dbus_message_iter_recurse(&arg_i, &array_i);
     dbus_message_iter_get_fixed_array(&array_i, addr_value, &n_elements);
     metadata = (void *)malloc(n_elements*sizeof(char));
+    if (metadata == NULL) {
+        AGM_LOGE("metadata is NULL");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED, "metadata is NULL");
+        return;
+    }
     memcpy(metadata, value, n_elements);
 
     if (agm_aif_set_metadata(aif_id, size, (uint8_t *)metadata) != 0) {
@@ -2235,6 +2308,7 @@ static void ipc_agm_session_read(DBusConnection *conn,
 
     pthread_mutex_lock(&ses_data->lock);
     ses_data->buf_size = buf_size;
+    ses_data->buf = calloc(1, buf_size);
     if (ses_data->thread_state != SES_THREAD_IDLE) {
         pthread_mutex_unlock(&ses_data->lock);
         agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED, "read via async failed");
@@ -2499,8 +2573,8 @@ static void ipc_agm_session_open(DBusConnection *conn,
         return;
     }
 
-    ses_data->lock = PTHREAD_MUTEX_INITIALIZER;
-    ses_data->cond = PTHREAD_COND_INITIALIZER;
+    pthread_mutex_init(&ses_data->lock, NULL);
+    pthread_cond_init(&ses_data->cond, NULL);
     ses_data->thread_state = SES_THREAD_IDLE;
     snprintf(ses_data->eventType, sizeof("Wait"), "%s", "Wait");
     AGM_LOGD("%s:Wait Event", __func__);
@@ -2527,7 +2601,7 @@ static void ipc_agm_session_open(DBusConnection *conn,
     return;
 }
 static void ipc_agm_cshm_alloc(
-                int32_t size, const agm_cshm_info &in_info, agm_cshm_info *_aidl_return) {
+                int32_t size, const agm_cshm_info *in_info, agm_cshm_info *_aidl_return) {
     return;
 }
 static void ipc_agm_cshm_msg(int32_t in_mem_id, int32_t in_offset,
@@ -2549,8 +2623,20 @@ int ipc_agm_init() {
     AGM_LOGV("%s : ", __func__);
 
     mdata = (agm_module_dbus_data *)malloc(sizeof(agm_module_dbus_data));
+    if (mdata == NULL) {
+        AGM_LOGE("mdata is NULL");
+        rc = -EINVAL;
+        return rc;
+    }
     mdata->dbus_obj_path =
                     (char *)malloc(sizeof(char)*(strlen(AGM_OBJECT_PATH) + 1));
+    if (mdata->dbus_obj_path == NULL) {
+        AGM_LOGE("dbus_obj_path is NULL");
+        free(mdata);
+        mdata = NULL;
+        rc = -EINVAL;
+        return rc;
+    }
     memcpy(mdata->dbus_obj_path, AGM_OBJECT_PATH, strlen(AGM_OBJECT_PATH)+1);
 
     mdata->conn = agm_dbus_new_connection();

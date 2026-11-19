@@ -37,6 +37,10 @@ libagm_la_SOURCES = $(agm_sources)
 libagm_la_LIBADD = -ltinyalsa @OSAL_LIBS@ @GSL_LIBS@ @ATS_LIBS@ -lsndcardparser
 libagm_la_LDFLAGS = -L$(top_builddir)/snd_parser/.libs
 
+if AGM_IPC_DBUS
+libagm_la_LIBADD += -ldbus-1
+endif
+
 libagm_la_CFLAGS = $(AM_CFLAGS) -DACDB_PATH=\"/etc/acdbdata/\" -DACDB_DELTA_FILE_PATH="/etc/acdbdata/delta"
 libagm_la_CFLAGS += -DCARD_STATE_UNSUPPORTED
 

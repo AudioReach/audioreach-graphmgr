@@ -2156,6 +2156,14 @@ int agm_cshm_dealloc(uint32_t mem_id)  {
     return 0;
 }
 
+int agm_shmem_buf_alloc(struct agm_shmem_info *buf_info){
+    return -EINVAL;
+}
+
+int agm_shmem_buf_free(uint32_t spf_mem_handle){
+    return -EINVAL;
+}
+
 int agm_init() {
     GError *error = NULL;
     int rc = 0;
