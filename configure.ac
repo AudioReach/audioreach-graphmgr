@@ -50,6 +50,15 @@ AC_ARG_WITH([audio-log-util-bridge],
     [with_audio_log_util_bridge=no])
 AM_CONDITIONAL([AGM_AUDIO_LOG_UTIL_BRIDGE],
                [test "x${with_audio_log_util_bridge}" = "xyes"])
+
+AC_ARG_ENABLE([debug-logging],
+    AS_HELP_STRING([--enable-debug-logging],
+        [enable AGM debug logging when audio-log-util bridge is disabled]),
+    [enable_debug_logging=$enableval],
+    [enable_debug_logging=no])
+AM_CONDITIONAL([AGM_LOG_DEBUG_ENABLE],
+    [test "x${enable_debug_logging}" = "xyes"])
+
 AC_ARG_ENABLE([bootkpi-logging],
     AS_HELP_STRING([--enable-bootkpi-logging],
         [enable Boot KPI logging in agmplay (default is no)]),
