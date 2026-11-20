@@ -45,6 +45,9 @@
 #include <stdbool.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <errno.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 #ifdef DYNAMIC_LOG_ENABLED
 #include <log_xml_parser.h>
@@ -73,6 +76,26 @@ static atomic_bool ats_stop_requested = false;
 static pthread_t ats_thread;
 static const int MAX_RETRIES = 120;
 
+/* debug tier mask, see agm/utils.h */
+uint32_t agm_log_lvl = (AGM_LOG_ERR | AGM_LOG_INFO | AGM_LOG_DBG);
+
+static void agm_log_lvl_init(void)
+{
+#ifdef AGM_USE_CUTILS
+    char value[PROPERTY_VALUE_MAX] = {0};
+    char *end = NULL;
+
+    if (property_get("vendor.audio.agm.loglevel", value, NULL) > 0) {
+        errno = 0;
+        unsigned long level = strtoul(value, &end, 16);
+        if (errno == 0 && end != value && *end == '\0' &&
+            level <= UINT32_MAX)
+            agm_log_lvl = (uint32_t)level;
+    }
+#endif
+    AGM_LOGI("agm log level 0x%x", agm_log_lvl);
+}
+
 static void *ats_init_thread(void *obj __unused)
 {
     int ret = 0;
@@ -99,6 +122,8 @@ int agm_init()
 
     if (agm_initialized)
         goto exit;
+
+    agm_log_lvl_init();
 
     pthread_attr_t tattr;
     struct sched_param param;

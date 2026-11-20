@@ -58,10 +58,52 @@
 #include <log/log.h>
 #endif
 
-#define AGM_LOGE(arg,...) ALOGE("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
-#define AGM_LOGD(arg,...) ALOGD("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
-#define AGM_LOGI(arg,...) ALOGI("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
-#define AGM_LOGV(arg,...) ALOGV("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
+#include <stdint.h>
+
+/* Debug tiers, bits as PAL. vendor.audio.agm.loglevel is hexadecimal.
+ * DBG is the master switch. HIGH/MID/LOW are independent tier selectors.
+ * Only libagm (AGM_LOG_TIERS) filters; other users print all. */
+#define AGM_LOG_ERR             (0x1)
+#define AGM_LOG_INFO            (0x2)
+#define AGM_LOG_DBG             (0x4)
+#define AGM_LOG_VERBOSE         (0x8)
+#define AGM_LOG_DBG_HIGH        (0x10) /* Main flow, once per operation. */
+#define AGM_LOG_DBG_MID         (0x20) /* One-off config and on-demand details. */
+#define AGM_LOG_DBG_LOW         (0x40) /* Per-call, per-buffer and dump logs. */
+#define AGM_LOG_DBG_SUB_MASK    (AGM_LOG_DBG_HIGH | AGM_LOG_DBG_MID | AGM_LOG_DBG_LOW)
+
+#ifdef AGM_LOG_TIERS
+extern uint32_t agm_log_lvl;
+#define AGM_LOG_ON(mask) (agm_log_lvl & (mask))
+#else
+#define AGM_LOG_ON(mask) (1)
+#endif
+
+#define AGM_LOG_DBG_TIER_ON(tier) \
+    (AGM_LOG_ON(AGM_LOG_DBG) && \
+     (!(AGM_LOG_ON(AGM_LOG_DBG_SUB_MASK)) || AGM_LOG_ON(tier)))
+
+#define AGM_LOGE(arg,...) \
+    do { if (AGM_LOG_ON(AGM_LOG_ERR)) \
+        ALOGE("%s: %d " arg, __func__, __LINE__, ##__VA_ARGS__); } while (0)
+#define AGM_LOGD_HIGH(arg,...) \
+    do { if (AGM_LOG_DBG_TIER_ON(AGM_LOG_DBG_HIGH)) \
+        ALOGD("%s: %d " arg, __func__, __LINE__, ##__VA_ARGS__); } while (0)
+/* Legacy AGM_LOGD() sites are HIGH. With no tier selector bits, all debug
+ * tiers remain enabled to preserve the old DBG-only behavior. */
+#define AGM_LOGD AGM_LOGD_HIGH
+#define AGM_LOGD_MID(arg,...) \
+    do { if (AGM_LOG_DBG_TIER_ON(AGM_LOG_DBG_MID)) \
+        ALOGD("%s: %d " arg, __func__, __LINE__, ##__VA_ARGS__); } while (0)
+#define AGM_LOGD_LOW(arg,...) \
+    do { if (AGM_LOG_DBG_TIER_ON(AGM_LOG_DBG_LOW)) \
+        ALOGD("%s: %d " arg, __func__, __LINE__, ##__VA_ARGS__); } while (0)
+#define AGM_LOGI(arg,...) \
+    do { if (AGM_LOG_ON(AGM_LOG_INFO)) \
+        ALOGI("%s: %d " arg, __func__, __LINE__, ##__VA_ARGS__); } while (0)
+#define AGM_LOGV(arg,...) \
+    do { if (AGM_LOG_ON(AGM_LOG_VERBOSE)) \
+        ALOGV("%s: %d " arg, __func__, __LINE__, ##__VA_ARGS__); } while (0)
 
 /*convert osal error codes to lnx error codes*/
 int ar_err_get_lnx_err_code(uint32_t error);
