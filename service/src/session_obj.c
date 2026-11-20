@@ -583,19 +583,8 @@ static int session_disconnect_aif(struct session_obj *sess_obj,
         //this is SSSD condition, hence stop just the stream/stream-device,
         //merged only sess-aif, aif
         pthread_mutex_lock(&aif_obj->dev_obj->lock);
-        int dev_open_cnt = aif_obj->dev_obj->refcnt.open;
-        if (dev_open_cnt > 1) {
-            //Backend device is still shared by other clients (e.g. HAL holds
-            //it open/started). Including dev_obj->metadata here would carry the
-            //device sg_props (DEVICE/DEVICE_PP) into the CLOSE_WITH_PROPS prune
-            //and tear down the shared device subgraph still in use, crashing SPF.
-            //Prune only the stream/stream-device; the device subgraph release is
-            //handled by the refcounted device_close() below.
-            merged_meta_sess_aif = metadata_merge(1, &aif_obj->sess_aif_meta);
-        } else {
-            merged_meta_sess_aif = metadata_merge(2, &aif_obj->sess_aif_meta,
-                                                &aif_obj->dev_obj->metadata);
-        }
+        merged_meta_sess_aif = metadata_merge(2, &aif_obj->sess_aif_meta,
+                                            &aif_obj->dev_obj->metadata);
         pthread_mutex_unlock(&aif_obj->dev_obj->lock);
         if (!merged_meta_sess_aif) {
             AGM_LOGE("No memory to create merged_metadata session_id: %d, \
