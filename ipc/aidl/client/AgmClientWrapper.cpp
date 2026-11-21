@@ -4,7 +4,7 @@
  */
 
 #define NDEBUG 0
-#define LOG_TAG "AgmIpc::Client"
+#define LOG_TAG "AGM: ipc_client"
 
 #include <algorithm>
 #include <agm/agm_api.h>

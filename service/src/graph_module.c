@@ -48,6 +48,7 @@
 #include <log_utils.h>
 #endif
 
+#define MAX_FRAME_SIZE (UINT32_MAX / 8)
 #define MONO 1
 #define GET_BITS_PER_SAMPLE(format, bit_width) \
                            (format == AGM_FORMAT_PCM_S24_LE? 32 : bit_width)
@@ -58,6 +59,8 @@
 
 static void get_default_channel_map(uint8_t *channel_map, int channels)
 {
+    int i = 0;
+
     switch (channels) {
     case CHANNEL_1:
          channel_map[0] = PCM_CHANNEL_C;
@@ -209,6 +212,30 @@ static void get_default_channel_map(uint8_t *channel_map, int channels)
          channel_map[30] = PCM_CHANNEL_LW;
          channel_map[31] = PCM_CHANNEL_RW;
          break;
+    case CHANNEL_63:
+        get_default_channel_map(channel_map, CHANNELS_32);
+        channel_map[32] = PCM_CHANNEL_LSD;
+        channel_map[33] = PCM_CHANNEL_RSD;
+        for (i = 34; i < 47; i++)
+            channel_map[i] = PCM_CUSTOM_CHANNEL_MAP_17 + (i - 34);
+        for (i = 47; i < CHANNEL_63; i++)
+            channel_map[i] = PCM_CUSTOM_CHANNEL_MAP_1 + (i - 47);
+        break;
+    case CHANNEL_64:
+        /* Reuse smaller default maps to avoid duplicating overlapping entries. */
+        get_default_channel_map(channel_map, CHANNELS_32);
+        channel_map[32] = PCM_CHANNEL_LSD;
+        channel_map[33] = PCM_CHANNEL_RSD;
+        for (i = 34; i < CHANNEL_64; i++)
+            channel_map[i] = PCM_CUSTOM_CHANNEL_MAP_17 + (i - 34);
+        break;
+    case CHANNEL_128:
+        get_default_channel_map(channel_map, CHANNEL_64);
+        for (i = CHANNEL_64; i < CHANNEL_128; i++)
+            channel_map[i] = PCM_CUSTOM_CHANNEL_MAP_31 + (i - CHANNEL_64);
+        break;
+    default:
+        AGM_LOGE("Unsupport channels: %d", channels);
     }
 }
 
@@ -1233,7 +1260,16 @@ int configure_pcm_encoder_params(struct module_info *mod,
         bits = get_pcm_bit_width(sess_obj->in_media_config.format);
         bits = GET_BITS_PER_SAMPLE(sess_obj->in_media_config.format, bits);
         channels = (channels == 0) ? MONO : channels;
-        frame_size = (sess_obj->in_buffer_config.size * 8) /
+        if (((uint32_t)sess_obj->in_buffer_config.size) > MAX_FRAME_SIZE) {
+            AGM_LOGE("Buffer size too large, potential overflow");
+            return -EINVAL;
+        }
+        if (channels == 0 || bits == 0) {
+            AGM_LOGE("Invalid channels (%d) or bits (%d) for frame size calculation",
+                     channels, bits);
+            return -EINVAL;
+        }
+        frame_size = ((uint32_t)(sess_obj->in_buffer_config.size) * 8) /
                         (channels * bits);
 
         if (samples_per_msec &&

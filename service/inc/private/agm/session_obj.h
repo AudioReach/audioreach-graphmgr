@@ -103,6 +103,7 @@ struct session_obj {
     size_t bytes_written;
     pthread_mutex_t lock;
     pthread_mutex_t cb_pool_lock;
+    struct agm_buf_info extern_buf_info;
 };
 
 struct session_pool {
@@ -112,6 +113,7 @@ struct session_pool {
 
 int session_obj_init();
 int session_obj_deinit();
+void session_obj_ssr_cleanup(void);
 int session_obj_valid_check(uint64_t hndl);
 int session_obj_get(int session_id, struct session_obj **sess_obj);
 struct session_obj *session_obj_retrieve_from_pool(uint32_t session_id);

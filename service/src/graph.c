@@ -265,7 +265,45 @@ int configure_buffer_params(struct graph_obj *gph_obj,
             buf_config.attributes = GSL_DATA_MODE_NON_BLOCKING;
         else if (mode == AGM_DATA_PUSH_PULL)
             buf_config.attributes = GSL_DATA_MODE_PUSH_PULL;
-        else {
+        else if (mode == AGM_DATA_EXTERN_PUSH_PULL) {
+            struct gsl_cmd_configure_datapath_read_write_params buf_config_v2 = {0};
+            uint64_t data_handle;
+            uint64_t total_size;
+
+            total_size = (uint64_t)buffer_config.count * buffer_config.size;
+            if (total_size > UINT32_MAX) {
+                AGM_LOGE("EXTERN_PUSH_PULL: buffer size overflow count=%u size=%zu\n",
+                         buffer_config.count, buffer_config.size);
+                ret = -EINVAL;
+                goto done;
+            }
+
+            buf_config_v2.attributes = GSL_DATA_MODE_EXTERN_PUSH_PULL;
+            buf_config_v2.num_buffs = 1;
+            buf_config_v2.buff_size = (uint32_t)total_size;
+            buf_config_v2.shmem_ep_tag = PULL_PUSH_SHMEM_ENDPOINT;
+            buf_config_v2.start_threshold = sess_obj->stream_config.start_threshold;
+            buf_config_v2.stop_threshold = sess_obj->stream_config.stop_threshold;
+
+            data_handle = (uint64_t)(uint32_t)sess_obj->extern_buf_info.data_buf_fd;
+            buf_config_v2.alloc_handles = &data_handle;
+            buf_config_v2.pos_buf_handle =
+                    (uint64_t)(uint32_t)sess_obj->extern_buf_info.pos_buf_fd;
+
+            AGM_LOGD("EXTERN_PUSH_PULL: data_fd=%d pos_fd=%d buff_size=%u\n",
+                     sess_obj->extern_buf_info.data_buf_fd,
+                     sess_obj->extern_buf_info.pos_buf_fd,
+                     buf_config_v2.buff_size);
+
+            if (sess_obj->stream_config.dir == RX)
+                cmd_id = GSL_CMD_CONFIGURE_DP_WRITE_PARAMS;
+            else
+                cmd_id = GSL_CMD_CONFIGURE_DP_READ_PARAMS;
+
+            ret = gsl_ioctl(gph_obj->graph_handle, cmd_id, &buf_config_v2,
+                            sizeof(buf_config_v2));
+            goto done;
+        } else {
             AGM_LOGE("Unsupported buffer mode : %d, Default to Blocking\n", mode);
             buf_config.attributes = GSL_DATA_MODE_BLOCKING;
         }
@@ -625,6 +663,9 @@ int graph_open(struct agm_meta_data_gsl *meta_data_kv,
                         goto free_graph_obj;
                     }
                     mod = mod_list->data;
+                    /* NO_HOST loopback: both HW EPs are bound via graph_add */
+                    if (sess_obj->stream_config.sess_mode == AGM_SESSION_NO_HOST)
+                        goto tag_list;
                     add_module = ADD_MODULE(*mod, dev_obj);
                     if (!add_module) {
                         AGM_LOGE("no memory to allocate add_module");
@@ -685,6 +726,7 @@ no_config:
     }
     graph_obj->state = OPENED;
     *gph_obj = graph_obj;
+    AGM_LOGI("GRAPH_OPEN success handle %p\n", graph_obj->graph_handle);
     AGM_LOGD("graph_handle %p\n", graph_obj->graph_handle);
 
     goto done;
@@ -744,7 +786,8 @@ int graph_close(struct graph_obj *graph_obj)
     if (ret !=0) {
         ret = ar_err_get_lnx_err_code(ret);
         AGM_LOGE("gsl close failed error %d\n", ret);
-    }
+    } else
+        AGM_LOGI("GRAPH_CLOSE success handle %p\n", graph_obj->graph_handle);
 #ifndef AGM_MEMLOG_UNSUPPORTED
     agm_memlog_graph_enqueue(GRAPH_CLOSE, ret, graph_obj->graph_handle);
 #endif
@@ -860,6 +903,7 @@ force_configure:
         goto done;
     }
     graph_obj->state = PREPARED;
+    AGM_LOGI("GRAPH_PREPARE success handle %p\n", graph_obj->graph_handle);
 
 done:
     pthread_mutex_unlock(&graph_obj->lock);
@@ -886,6 +930,7 @@ int graph_start(struct graph_obj *graph_obj)
         goto done;
     }
     graph_obj->state = STARTED;
+    AGM_LOGI("GRAPH_START success handle %p\n", graph_obj->graph_handle);
 
 done:
 #ifndef AGM_MEMLOG_UNSUPPORTED
@@ -932,6 +977,8 @@ int graph_stop(struct graph_obj *graph_obj,
             /* Continue to close graph even stop fails */
             if (ret !=0)
                 AGM_LOGE("graph stop with prop failed %d\n", ret);
+            else
+                AGM_LOGI("GRAPH_STOP success handle %p\n", graph_obj->graph_handle);
         }
 
         ret = gsl_ioctl(graph_obj->graph_handle, GSL_CMD_CLOSE_WITH_PROPS,
@@ -950,7 +997,8 @@ int graph_stop(struct graph_obj *graph_obj,
         if (ret !=0) {
             ret = ar_err_get_lnx_err_code(ret);
             AGM_LOGE("graph stop failed %d\n", ret);
-        }
+        } else
+            AGM_LOGI("GRAPH_STOP success handle %p\n", graph_obj->graph_handle);
     }
 
 done:
@@ -1919,13 +1967,19 @@ done:
 size_t graph_get_hw_processed_buff_cnt(struct graph_obj *graph_obj,
                                        enum direction dir __unused)
 {
+    uint32_t cnt = 0;
+    int ret = 0;
     if (graph_obj == NULL) {
         AGM_LOGE("invalid graph object or null callback\n");
         return 0;
     }
-    /*TODO: Uncomment that call once platform moves to latest GSL release*/
-    return 2 /*gsl_get_processed_buff_cnt(graph_obj->graph_handle, dir)*/;
-
+    ret = gsl_get_processed_buff_cnt(graph_obj->graph_handle, dir, &cnt);
+    if(ret){
+      AGM_LOGE(" failed to gsl_get_processed_buff_cnt: ret: %d", ret);
+      return 0;
+    }
+    AGM_LOGD("gsl_get_processed_buff_cnt: %d", cnt);
+    return cnt;
 }
 
 int graph_eos(struct graph_obj *graph_obj)

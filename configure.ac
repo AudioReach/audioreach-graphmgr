@@ -29,6 +29,49 @@ AC_ARG_WITH([syslog],
     [with_syslog=no])
 AM_CONDITIONAL([USE_SYSLOG], [test "x${with_syslog}" = "xyes"])
 
+AC_ARG_WITH([automotive],
+    AS_HELP_STRING([use automotive (default is no)]),
+    [with_automotive=$withval],
+    [with_automotive=no])
+AM_CONDITIONAL([AUTOMOTIVE], [test "x${with_automotive}" = "xyes"])
+
+# Define custom libdir for snd_parser when automotive is enabled
+if test "x${with_automotive}" = "xyes"; then
+    SND_PARSER_LIBDIR="${prefix}/lib/ar"
+else
+    SND_PARSER_LIBDIR="${libdir}/"
+fi
+AC_SUBST([SND_PARSER_LIBDIR])
+
+AC_ARG_WITH([audio-log-util-bridge],
+    AS_HELP_STRING([--with-audio-log-util-bridge],
+                   [route AGM logs through audio-log-util (default is no)]),
+    [with_audio_log_util_bridge=$withval],
+    [with_audio_log_util_bridge=no])
+AM_CONDITIONAL([AGM_AUDIO_LOG_UTIL_BRIDGE],
+               [test "x${with_audio_log_util_bridge}" = "xyes"])
+
+AC_ARG_ENABLE([debug-logging],
+    AS_HELP_STRING([--enable-debug-logging],
+        [enable AGM debug logging when audio-log-util bridge is disabled]),
+    [enable_debug_logging=$enableval],
+    [enable_debug_logging=no])
+AM_CONDITIONAL([AGM_LOG_DEBUG_ENABLE],
+    [test "x${enable_debug_logging}" = "xyes"])
+
+AC_ARG_ENABLE([bootkpi-logging],
+    AS_HELP_STRING([--enable-bootkpi-logging],
+        [enable Boot KPI logging in agmplay (default is no)]),
+    [enable_bootkpi_logging=$enableval],
+    [enable_bootkpi_logging=no])
+AM_CONDITIONAL([ENABLE_BOOTKPI_LOGGING],
+    [test "x${enable_bootkpi_logging}" = "xyes"])
+
+if test "x${enable_bootkpi_logging}" = "xyes"; then
+    AC_CHECK_HEADERS([bootkpi/logging.h], [],
+        [AC_MSG_ERROR([--enable-bootkpi-logging requires bootkpi/logging.h])])
+fi
+
 AC_ARG_WITH([are_on_apps],
     AS_HELP_STRING([--with-are-on-apps],[Enable ARE (SPF) on APPS support (default is no)]),
     [with_are_on_apps=$withval],

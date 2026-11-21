@@ -15,6 +15,11 @@ libagmclient_la_CPPFLAGS += $(GLIB_CFLAGS)
 libagmclient_la_LIBADD += $(GLIB_LIBS) -lgobject-2.0 -lgio-2.0
 endif
 
+if AGM_AUDIO_LOG_UTIL_BRIDGE
+libagmclient_la_CPPFLAGS += -DAGM_AUDIO_LOG_UTIL_BRIDGE -DAGM_LOG_MODULE=MODULE_AGM_IPC_CLIENT
+libagmclient_la_LIBADD += -laudio_log_util
+endif
+
 if USE_G_STR_FUNC
 libagmclient_la_CPPFLAGS += -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
 endif

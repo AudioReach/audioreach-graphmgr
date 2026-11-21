@@ -5,7 +5,7 @@
 
 
 #define NDEBUG 0
-#define LOG_TAG "AgmIpc::Server"
+#define LOG_TAG "AGM: ipc_server"
 
 #include <unistd.h>
 #include <agm/AgmAidlToLegacy.h>

@@ -37,6 +37,10 @@ libagm_la_SOURCES = $(agm_sources)
 libagm_la_LIBADD = -ltinyalsa @OSAL_LIBS@ @GSL_LIBS@ @ATS_LIBS@ -lsndcardparser
 libagm_la_LDFLAGS = -L$(top_builddir)/snd_parser/.libs
 
+if AGM_IPC_DBUS
+libagm_la_LIBADD += -ldbus-1
+endif
+
 libagm_la_CFLAGS = $(AM_CFLAGS) -DACDB_PATH=\"/etc/acdbdata/\" -DACDB_DELTA_FILE_PATH="/etc/acdbdata/delta"
 libagm_la_CFLAGS += -DCARD_STATE_UNSUPPORTED
 
@@ -57,6 +61,15 @@ if MEMLOGGER_SUPPORTED
 libagm_la_LIBADD += -laudio_log_utils -larmemlog
 else
 libagm_la_CFLAGS += -DAGM_MEMLOG_UNSUPPORTED
+endif
+
+if AGM_AUDIO_LOG_UTIL_BRIDGE
+libagm_la_CFLAGS += -DAGM_AUDIO_LOG_UTIL_BRIDGE -DAGM_LOG_MODULE=MODULE_AGM_CORE
+libagm_la_LIBADD += -laudio_log_util
+else
+if AGM_LOG_DEBUG_ENABLE
+libagm_la_CFLAGS += -DAGM_LOG_DEBUG_ENABLE
+endif
 endif
 
 if USE_GLIB
