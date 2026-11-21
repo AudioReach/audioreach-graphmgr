@@ -1095,6 +1095,8 @@ static int session_start(struct session_obj *sess_obj)
     struct session_obj *pb_obj = NULL;
     struct device_obj *ec_ref_dev_obj = NULL;
 
+    AGM_LOGD("entry, session id %d\n", sess_obj->sess_id);
+
     if (sess_mode != AGM_SESSION_NON_TUNNEL && sess_mode != AGM_SESSION_NO_CONFIG) {
         count = aif_obj_get_count_with_state(sess_obj, AIF_OPENED, false);
         if (count == 0) {
@@ -1270,6 +1272,7 @@ device_stop:
     }
     pthread_mutex_unlock(&hwep_lock);
 done:
+    AGM_LOGD("exit, session id %d, ret %d\n", sess_obj->sess_id, ret);
     return ret;
 }
 
@@ -1280,6 +1283,8 @@ static int session_stop(struct session_obj *sess_obj)
     enum direction dir = sess_obj->stream_config.dir;
     enum agm_session_mode sess_mode = sess_obj->stream_config.sess_mode;
     struct listnode *node = NULL;
+
+    AGM_LOGD("entry, session id %d\n", sess_obj->sess_id);
 
     if (sess_obj->state != SESSION_STARTED) {
         AGM_LOGE("session not in STARTED state, current state:%d\n",
@@ -1340,6 +1345,7 @@ static int session_stop(struct session_obj *sess_obj)
     sess_obj->state = SESSION_STOPPED;
 
 done:
+    AGM_LOGD("exit, session id %d, ret %d\n", sess_obj->sess_id, ret);
     return ret;
 }
 
