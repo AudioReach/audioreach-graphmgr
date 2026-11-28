@@ -1,0 +1,140 @@
+.TH AGMCAP 1 "2026-09-03" "AudioReach Graph Manager" "User Commands"
+.SH NAME
+agmcap \- capture audio to a WAV file via the AudioReach Graph Manager
+.SH SYNOPSIS
+.B agmcap
+.I file.wav
+.B \-i
+.I intf_name
+.RI [ options ]
+.SH DESCRIPTION
+.B agmcap
+captures PCM audio from an AGM audio interface and writes it to a WAV file.
+The output file must reside under the
+.I /data/
+directory.
+.PP
+Recording stops when the capture time expires (see
+.BR \-T ),
+or when the process receives
+.BR SIGINT ,
+.BR SIGHUP ,
+or
+.BR SIGTERM .
+.SH OPTIONS
+.TP
+.BI \-i " intf_name"
+Audio interface name to capture from (required).
+The name must match an entry in
+.IR /etc/backend_conf.xml .
+TX (capture) interfaces available on this platform include:
+.RS
+.TP
+.B CODEC_DMA interfaces
+CODEC_DMA-LPAIF_RXTX-TX-3, CODEC_DMA-LPAIF_RXTX-TX-4,
+CODEC_DMA-LPAIF_VA-TX-0, CODEC_DMA-LPAIF_VA-TX-1, CODEC_DMA-LPAIF_VA-TX-2,
+CODEC_DMA-LPAIF_WSA-TX-2, CODEC_DMA-LPAIF_WSA-TX-3,
+CODEC_DMA-LPAIF_WSA2-TX-0, CODEC_DMA-LPAIF_WSA2-TX-1, CODEC_DMA-LPAIF_WSA2-TX-2,
+CODEC_DMA-QAIF-TX-0, CODEC_DMA-QAIF-TX-1, CODEC_DMA-QAIF-TX-2,
+CODEC_DMA-QAIF_VA-TX-0
+.TP
+.B Other interfaces
+SLIM-DEV1-TX-0, USB_AUDIO-TX, MI2S-LPAIF-TX-PRIMARY, MI2S-LPAIF-TX-SECONDARY,
+MI2S-LPAIF-TX-TERTIARY, TDM-LPAIF-TX-PRIMARY, BTFM_PROXY-TX-0
+.RE
+.TP
+.BI \-D " card"
+ALSA sound card number.
+The AGM virtual sound card is typically card
+.B 100
+(default).
+.TP
+.BI \-d " device"
+ALSA PCM device number within the card.
+Refer to
+.I /etc/card-defs.xml
+for the capture-capable virtual frontend devices available on the target
+(those with
+.BR capture=1 ).
+Default: 101.
+.TP
+.BI \-c " channels"
+Number of channels (default: 2).
+.TP
+.BI \-r " rate"
+Sample rate in Hz (default: 48000).
+.TP
+.BI \-b " bits"
+Bit depth: 16, 24, or 32 (default: 16).
+.TP
+.BI \-p " period_size"
+Period size in frames (default: 1024).
+.TP
+.BI \-n " n_periods"
+Number of periods (default: 4).
+.TP
+.BI \-T " seconds"
+Capture duration in seconds. If 0 or omitted, capture runs until interrupted.
+.TP
+.BI \-skv " stream_kv"
+Stream key-value pair (hex). Defaults to
+.B PCM_RECORD
+if not specified.
+.TP
+.BI \-dkv " device_kv"
+Device key-value pair (hex, default: 0).
+.TP
+.BI \-ikv " instance_kv"
+Instance key-value pair. Assign 0 if no instance KV is present in the graph
+(default: INSTANCE_1).
+.TP
+.BI \-dppkv " devicepp_kv"
+Device post-processing key-value pair (hex). Assign 0 if no device PP is
+present in the graph (default: 0).
+.TP
+.BI \-is_24_LE " 0|1"
+Only relevant when
+.B \-b
+is 32.
+Set to
+.B 1
+to use
+.B S24_LE
+format instead of
+.B S32_LE
+(default: 0).
+.TP
+.BI \-usb_d " usb_device"
+USB device index (default: 1). Used only with the
+.B USB_AUDIO-TX
+interface.
+.TP
+.B \-help
+Print a brief usage summary and exit.
+.SH EXAMPLES
+Capture 10 seconds of stereo audio at 48 kHz / 16-bit:
+.PP
+.RS
+.EX
+agmcap /data/out.wav \-i SLIM_0_TX \-c 2 \-r 48000 \-b 16 \-T 10
+.EE
+.RE
+.PP
+Capture from a USB microphone:
+.PP
+.RS
+.EX
+agmcap /data/usb.wav \-i USB_AUDIO-TX \-usb_d 2 \-c 2 \-r 48000 \-b 16
+.EE
+.RE
+.SH FILES
+.TP
+.I /etc/backend_conf.xml
+Backend configuration file used to look up interface media parameters.
+.TP
+.I /etc/card-defs.xml
+Defines the virtual sound card and its PCM frontend devices.
+.SH SEE ALSO
+.BR agmplay (1)
+.SH AUTHORS
+The AudioReach Graph Manager contributors.
