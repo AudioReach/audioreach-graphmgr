@@ -519,7 +519,17 @@ static int agm_pcm_sw_params(struct pcm_plugin *plugin,
 
     session_config->dir = (plugin->mode & PCM_IN) ? TX : RX;
     session_config->sess_mode = sess_mode;
-    session_config->start_threshold = (uint32_t)sparams->start_threshold;
+    /*
+     * ALSA thresholds are in frames, AGM expects bytes. A threshold
+     * larger than the buffer can never be reached (clients use the
+     * ALSA boundary to disable it), so map it to UINT32_MAX instead
+     * of converting it, which would overflow.
+     */
+    if (sparams->start_threshold > priv->total_size_frames)
+        session_config->start_threshold = UINT32_MAX;
+    else
+        session_config->start_threshold = agm_pcm_frames_to_bytes(
+                priv->media_config, sparams->start_threshold);
     session_config->stop_threshold = (uint32_t)sparams->stop_threshold;
 
     ret = agm_session_set_config(priv->handle, session_config,
