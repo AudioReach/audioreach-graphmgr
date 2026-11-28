@@ -349,8 +349,8 @@ int device_open(struct device_obj *dev_obj)
         grp_data = obj->group_data;
 
     if (obj->refcnt.open) {
-        AGM_LOGI("PCM device %u already opened\n",
-                 obj->pcm_id);
+        AGM_LOGI("%s: PCM device %u already opened, refcnt: %d\n",
+                 __func__, obj->pcm_id, obj->refcnt.open);
         obj->refcnt.open++;
         if (grp_data)
             grp_data->refcnt.open++;
@@ -486,8 +486,8 @@ int device_start(struct device_obj *dev_obj)
         grp_data = obj->group_data;
 
     if (obj->refcnt.start) {
-        AGM_LOGI("PCM device %u already in start state\n",
-              obj->pcm_id);
+        AGM_LOGI("PCM device %u already in start state, refcnt: %d\n",
+              obj->pcm_id, obj->refcnt.start);
         obj->refcnt.start++;
         if (grp_data)
             grp_data->refcnt.start++;
@@ -572,6 +572,9 @@ int device_close(struct device_obj *dev_obj)
               obj->pcm_id);
         goto done;
     }
+
+    AGM_LOGI("PCM device %u open refcnt: %d\n",
+            obj->pcm_id, obj->refcnt.open);
 
     if (obj->group_data) {
         grp_data = obj->group_data;

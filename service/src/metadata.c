@@ -76,31 +76,31 @@
 void metadata_print(struct agm_meta_data_gsl* metadata)
 {
     int i, count = metadata->gkv.num_kvs;
-    AGM_LOGD("*************************Metadata*************************\n");
-    AGM_LOGD("GKV size:%d\n", count);
+    if (!AGM_LOG_DBG_TIER_ON(AGM_LOG_DBG_LOW))
+        return;
+    AGM_LOGD_LOW("*************************Metadata*************************\n");
+    AGM_LOGD_LOW("GKV size:%d\n", count);
     for (i = 0; i < count; i++) {
-        AGM_LOGD("key:0x%x, value:0x%x ", metadata->gkv.kv[i].key,
+        AGM_LOGD_LOW("key:0x%x, value:0x%x ", metadata->gkv.kv[i].key,
                                        metadata->gkv.kv[i].value);
     }
 
     count = metadata->ckv.num_kvs;
-    AGM_LOGD("\nCKV count:%d\n", count);
+    AGM_LOGD_LOW("CKV count:%d\n", count);
     for (i = 0; i < count; i++) {
-        AGM_LOGD("key:0x%x, value:0x%x ", metadata->ckv.kv[i].key,
+        AGM_LOGD_LOW("key:0x%x, value:0x%x ", metadata->ckv.kv[i].key,
                                        metadata->ckv.kv[i].value);
     }
-    AGM_LOGD("\n");
 
-    AGM_LOGD("Property ID:%d\n", metadata->sg_props.prop_id);
-    AGM_LOGD("property count:%d\n", metadata->sg_props.num_values);
+    AGM_LOGD_LOW("Property ID:%d\n", metadata->sg_props.prop_id);
+    AGM_LOGD_LOW("property count:%d\n", metadata->sg_props.num_values);
 
     count = metadata->sg_props.num_values;
-    AGM_LOGD("Property Values: ");
+    AGM_LOGD_LOW("Property Values: ");
     for (i = 0; i < count; i++) {
-        AGM_LOGD("0x%x ", metadata->sg_props.values[i]);
+        AGM_LOGD_LOW("0x%x ", metadata->sg_props.values[i]);
     }
-    AGM_LOGD("\n");
-    AGM_LOGD("****************Metadata Done***************************\n\n");
+    AGM_LOGD_LOW("****************Metadata Done***************************\n");
 
 }
 
